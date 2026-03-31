@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>MAFIA | دخول غرفة</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Changa:wght@400;600;800&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-deep: #020308;
+            --clr-join: #00d2ff;
+            --clr-create: #ff0055;
+            --clr-gold: #e5c05c;
+            --clr-green: #3a8a55;
+        }
+        * { margin:0; padding:0; box-sizing:border-box; user-select:none; }
+
+        body {
+            background: radial-gradient(circle at 30% 50%, #0a1628 0%, var(--bg-deep) 70%);
+            color:#fff; font-family:'Changa',sans-serif;
+            height:100vh; overflow:hidden;
+            display:flex; align-items:center; justify-content:center;
+        }
+
+        #crt-overlay {
+            position:fixed; inset:0; z-index:10000; pointer-events:none;
+            background:linear-gradient(rgba(18,16,16,0) 50%,rgba(0,0,0,0.12) 50%);
+            background-size:100% 4px;
+            box-shadow:inset 0 0 200px rgba(0,0,0,0.9);
+        }
+
+        /* ======= الحاوية الرئيسية ======= */
+        .join-container {
+            position:relative; z-index:100;
+            display:flex; gap:60px; align-items:flex-start;
+            width:95%; max-width:1100px;
+        }
+
+        /* ======= لوحة إدخال الكود ======= */
+        .code-panel {
+            flex:1; max-width:520px;
+            background:rgba(10,15,30,0.85);
+            border:2px solid rgba(0,210,255,0.25);
+            border-radius:24px; padding:40px;
+            backdrop-filter:blur(20px);
+            box-shadow:0 30px 80px rgba(0,0,0,0.8), 0 0 40px rgba(0,210,255,0.05);
+        }
+
+        .panel-title {
+            font-family:'Orbitron'; font-size:1.8rem; font-weight:900;
+            color:var(--clr-join); letter-spacing:4px; text-align:center;
+            margin-bottom:8px; text-shadow:0 0 20px rgba(0,210,255,0.5);
+        }
+        .panel-sub {
+            text-align:center; color:#64748b; font-size:0.9rem;
+            margin-bottom:36px; letter-spacing:2px;
+        }
+
+        /* خلايا كود الغرفة */
+        .code-cells {
+            display:flex; gap:12px; justify-content:center; margin-bottom:32px;
+            direction:ltr;
+        }
+        .code-cell {
+            width:72px; height:88px; border-radius:14px;
+            background:rgba(0,0,0,0.5); border:3px solid rgba(255,255,255,0.08);
+            font-family:'Orbitron'; font-size:2.4rem; font-weight:900; color:#fff;
+            display:flex; align-items:center; justify-content:center;
+            transition:0.2s; text-transform:uppercase;
+            box-shadow:0 8px 20px rgba(0,0,0,0.6);
+        }
+        .code-cell.active {
+            border-color:var(--clr-join);
+            box-shadow:0 0 20px rgba(0,210,255,0.4), 0 8px 20px rgba(0,0,0,0.6);
+            animation:cellPulse 1s infinite;
+        }
+        .code-cell.filled {
+            border-color:rgba(0,210,255,0.5);
+            color:var(--clr-join);
+        }
+        .code-cell.error {
+            border-color:var(--clr-create);
+            color:var(--clr-create);
+            animation:shake 0.3s ease;
+        }
+        @keyframes cellPulse { 0%,100%{box-shadow:0 0 20px rgba(0,210,255,0.4),0 8px 20px rgba(0,0,0,0.6)} 50%{box-shadow:0 0 35px rgba(0,210,255,0.7),0 8px 20px rgba(0,0,0,0.6)} }
+        @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-6px)} 75%{transform:translateX(6px)} }
+
+        /* الفاصل (dash) */
+        .code-dash {
+            font-family:'Orbitron'; font-size:2rem; color:#334155;
+            display:flex; align-items:center; padding-top:4px;
+        }
+
+        /* input مخفي */
+        #hidden-input {
+            position:absolute; opacity:0; pointer-events:none; width:0; height:0;
+        }
+
+        /* لوحة المفاتيح */
+        .keypad { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:28px; }
+        .key {
+            height:58px; border-radius:12px;
+            background:rgba(255,255,255,0.04); border:2px solid rgba(255,255,255,0.08);
+            color:#fff; font-family:'Orbitron'; font-size:1.1rem; font-weight:700;
+            cursor:pointer; transition:0.1s;
+            display:flex; align-items:center; justify-content:center;
+            box-shadow:0 6px 0 rgba(0,0,0,0.5);
+        }
+        .key:hover { background:rgba(0,210,255,0.1); border-color:rgba(0,210,255,0.4); transform:translateY(-2px); }
+        .key:active { transform:translateY(6px); box-shadow:0 0 0 transparent; }
+        .key.key-del { border-color:rgba(255,0,85,0.3); color:var(--clr-create); }
+        .key.key-del:hover { background:rgba(255,0,85,0.1); border-color:var(--clr-create); }
+        .key.key-clear { border-color:rgba(255,193,7,0.3); color:#ffc107; font-size:0.8rem; }
+        .key.key-clear:hover { background:rgba(255,193,7,0.1); border-color:#ffc107; }
+
+        /* زر الدخول */
+        .btn-enter {
+            width:100%; height:62px; border-radius:16px;
+            background:var(--clr-join); border:none; color:#000;
+            font-family:'Changa'; font-size:1.4rem; font-weight:900;
+            cursor:pointer; letter-spacing:2px;
+            box-shadow:0 10px 0 #004c6e, 0 0 30px rgba(0,210,255,0.3);
+            transition:0.1s; position:relative; overflow:hidden;
+        }
+        .btn-enter::before {
+            content:''; position:absolute; inset:0;
+            background:linear-gradient(135deg,rgba(255,255,255,0.2),transparent);
+        }
+        .btn-enter:hover { filter:brightness(1.1); transform:translateY(-3px); }
+        .btn-enter:active { transform:translateY(10px); box-shadow:0 0 0 transparent; }
+        .btn-enter:disabled { opacity:0.35; cursor:not-allowed; transform:none; }
+
+        /* ======= القائمة الجانبية (الغرف الأخيرة + عشوائي) ======= */
+        .side-panel {
+            flex:0 0 320px;
+            display:flex; flex-direction:column; gap:20px;
+        }
+
+        .quick-join {
+            background:rgba(10,15,30,0.85);
+            border:2px solid rgba(58,138,85,0.3);
+            border-radius:20px; padding:28px;
+            backdrop-filter:blur(20px);
+            box-shadow:0 20px 50px rgba(0,0,0,0.7);
+            cursor:pointer; transition:0.2s;
+            text-align:center;
+        }
+        .quick-join:hover { border-color:var(--clr-green); box-shadow:0 20px 50px rgba(0,0,0,0.7),0 0 30px rgba(58,138,85,0.2); transform:translateY(-3px); }
+        .qj-icon { font-size:2.5rem; margin-bottom:10px; }
+        .qj-title { font-family:'Orbitron'; font-size:1rem; color:var(--clr-green); letter-spacing:3px; margin-bottom:6px; }
+        .qj-sub { color:#64748b; font-size:0.85rem; }
+
+        .recent-panel {
+            background:rgba(10,15,30,0.85);
+            border:2px solid rgba(255,255,255,0.07);
+            border-radius:20px; padding:24px;
+            backdrop-filter:blur(20px);
+            box-shadow:0 20px 50px rgba(0,0,0,0.7);
+        }
+        .recent-title {
+            font-family:'Orbitron'; font-size:0.8rem; color:#475569;
+            letter-spacing:3px; margin-bottom:16px; text-align:center;
+        }
+        .recent-item {
+            display:flex; align-items:center; justify-content:space-between;
+            padding:12px 14px; border-radius:12px; margin-bottom:8px;
+            background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06);
+            cursor:pointer; transition:0.2s;
+        }
+        .recent-item:hover { background:rgba(0,210,255,0.07); border-color:rgba(0,210,255,0.3); }
+        .recent-item:last-child { margin-bottom:0; }
+        .ri-code { font-family:'Orbitron'; font-size:1rem; color:var(--clr-join); font-weight:700; letter-spacing:2px; }
+        .ri-info { font-size:0.75rem; color:#64748b; }
+        .ri-arrow { color:#334155; font-size:0.9rem; transition:0.2s; }
+        .recent-item:hover .ri-arrow { color:#fff; transform:translateX(-4px); }
+
+        .btn-back {
+            position:fixed; top:24px; right:24px; z-index:500;
+            background:rgba(0,0,0,0.6); border:2px solid rgba(255,255,255,0.15);
+            color:#fff; font-family:'Changa'; font-size:1rem; font-weight:800;
+            padding:10px 22px; border-radius:12px; cursor:pointer; transition:0.2s;
+            backdrop-filter:blur(10px);
+        }
+        .btn-back:hover { border-color:#fff; }
+
+        /* رسالة الخطأ */
+        .error-msg {
+            text-align:center; color:var(--clr-create); font-size:0.9rem; font-weight:700;
+            margin-top:12px; height:20px; transition:0.3s;
+        }
+
+        /* مؤشر التحميل */
+        .loading-dots { display:none; justify-content:center; gap:6px; margin-top:16px; }
+        .loading-dots.show { display:flex; }
+        .dot {
+            width:8px; height:8px; border-radius:50%; background:var(--clr-join);
+            animation:dotPulse 1.2s infinite;
+        }
+        .dot:nth-child(2) { animation-delay:0.2s; }
+        .dot:nth-child(3) { animation-delay:0.4s; }
+        @keyframes dotPulse { 0%,60%,100%{transform:scale(0.6);opacity:0.4} 30%{transform:scale(1);opacity:1} }
+    </style>
+</head>
+<body>
+    <div id="crt-overlay"></div>
+    <button class="btn-back" onclick="navTo('index.html')">← الرئيسية</button>
+    <input id="hidden-input" type="text" maxlength="5" autocomplete="off">
+
+    <div class="join-container" id="main-container">
+
+        <!-- لوحة إدخال الكود -->
+        <div class="code-panel">
+            <div class="panel-title">JOIN ROOM</div>
+            <div class="panel-sub">أدخل رمز الغرفة المكوّن من 5 أحرف</div>
+
+            <div class="code-cells" id="code-cells" onclick="focusInput()">
+                <div class="code-cell active" id="cell-0">_</div>
+                <div class="code-cell" id="cell-1"></div>
+                <div class="code-dash">-</div>
+                <div class="code-cell" id="cell-2"></div>
+                <div class="code-cell" id="cell-3"></div>
+                <div class="code-cell" id="cell-4"></div>
+            </div>
+
+            <!-- لوحة مفاتيح مرئية -->
+            <div class="keypad" id="keypad">
+                <div class="key" onclick="pressKey('1')">1</div>
+                <div class="key" onclick="pressKey('2')">2</div>
+                <div class="key" onclick="pressKey('3')">3</div>
+                <div class="key" onclick="pressKey('4')">4</div>
+                <div class="key" onclick="pressKey('5')">5</div>
+                <div class="key" onclick="pressKey('6')">6</div>
+                <div class="key" onclick="pressKey('7')">7</div>
+                <div class="key" onclick="pressKey('8')">8</div>
+                <div class="key" onclick="pressKey('9')">9</div>
+                <div class="key" onclick="pressKey('0')">0</div>
+                <div class="key" onclick="pressKey('A')">A</div>
+                <div class="key" onclick="pressKey('B')">B</div>
+                <div class="key" onclick="pressKey('C')">C</div>
+                <div class="key" onclick="pressKey('D')">D</div>
+                <div class="key key-del" onclick="deleteKey()">⌫</div>
+                <div class="key key-clear" onclick="clearCode()">مسح</div>
+            </div>
+
+            <button class="btn-enter" id="btn-enter" onclick="joinRoom()" disabled>دخول الغرفة 🚪</button>
+            <div class="error-msg" id="error-msg"></div>
+            <div class="loading-dots" id="loading">
+                <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+            </div>
+        </div>
+
+        <!-- الجانب الأيمن -->
+        <div class="side-panel">
+
+            <div class="quick-join" onclick="quickJoin()">
+                <div class="qj-icon">🎲</div>
+                <div class="qj-title">QUICK JOIN</div>
+                <div class="qj-sub">انضم لغرفة عشوائية متاحة</div>
+            </div>
+
+            <div class="recent-panel">
+                <div class="recent-title">RECENT ROOMS</div>
+                <div id="recent-list">
+                    <div class="recent-item" onclick="fillCode('X7A9B')">
+                        <div>
+                            <div class="ri-code">X7-A9B</div>
+                            <div class="ri-info">منذ 10 دقائق • 6 لاعبين</div>
+                        </div>
+                        <div class="ri-arrow">←</div>
+                    </div>
+                    <div class="recent-item" onclick="fillCode('M3K2P')">
+                        <div>
+                            <div class="ri-code">M3-K2P</div>
+                            <div class="ri-info">منذ ساعة • 8 لاعبين</div>
+                        </div>
+                        <div class="ri-arrow">←</div>
+                    </div>
+                    <div class="recent-item" onclick="fillCode('Z9F1Q')">
+                        <div>
+                            <div class="ri-code">Z9-F1Q</div>
+                            <div class="ri-info">أمس • 5 لاعبين</div>
+                        </div>
+                        <div class="ri-arrow">←</div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        let code = '';
+        const CELLS = [0,1,2,3,4];
+
+        function focusInput() { document.getElementById('hidden-input').focus(); }
+
+        document.getElementById('hidden-input').addEventListener('input', function() {
+            const val = this.value.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,5);
+            this.value = val;
+            code = val;
+            updateCells();
+        });
+
+        document.getElementById('hidden-input').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') joinRoom();
+            if (e.key === 'Backspace') {
+                code = code.slice(0,-1);
+                this.value = code;
+                updateCells();
+                e.preventDefault();
+            }
+        });
+
+        function pressKey(char) {
+            if (code.length >= 5) return;
+            code += char;
+            document.getElementById('hidden-input').value = code;
+            updateCells();
+            // bounce animation on pressed cell
+            const idx = code.length - 1;
+            const cell = document.getElementById(`cell-${idx}`);
+            gsap.from(cell, { scale: 1.3, duration: 0.2, ease: 'back.out(2)' });
+        }
+
+        function deleteKey() {
+            if (!code.length) return;
+            code = code.slice(0,-1);
+            document.getElementById('hidden-input').value = code;
+            updateCells();
+        }
+
+        function clearCode() {
+            code = '';
+            document.getElementById('hidden-input').value = '';
+            updateCells();
+            document.getElementById('error-msg').innerText = '';
+        }
+
+        function updateCells() {
+            CELLS.forEach(i => {
+                const cell = document.getElementById(`cell-${i}`);
+                cell.classList.remove('active','filled','error');
+                if (i < code.length) {
+                    cell.innerText = code[i];
+                    cell.classList.add('filled');
+                } else if (i === code.length) {
+                    cell.innerText = '_';
+                    cell.classList.add('active');
+                } else {
+                    cell.innerText = '';
+                }
+            });
+            document.getElementById('btn-enter').disabled = code.length < 5;
+            if (document.getElementById('error-msg').innerText) {
+                document.getElementById('error-msg').innerText = '';
+            }
+        }
+
+        function fillCode(c) {
+            code = c.replace('-','').slice(0,5);
+            document.getElementById('hidden-input').value = code;
+            updateCells();
+            gsap.from('#code-cells', { scale:0.97, duration:0.3, ease:'back.out(2)' });
+        }
+
+        // Supabase setup
+const SUPABASE_URL  = 'https://hdnmvpldhrosianqthlu.supabase.co';
+const SUPABASE_ANON = 'sb_publishable_pqG_RG3ntMuC3VdOJG45cA_ZZ_Z1JGB';
+        const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+
+        async function joinRoom() {
+            if (code.length < 5) return;
+            const btn = document.getElementById('btn-enter');
+            btn.disabled = true;
+            document.getElementById('loading').classList.add('show');
+
+            // تحقق من الجلسة
+            const { data: { session } } = await sb.auth.getSession();
+            if (!session) { location.href = 'index.html'; return; }
+
+            // بحث حقيقي في Supabase
+            const { data: room, error } = await sb.from('rooms')
+                .select('id, code, status')
+                .eq('code', code.toUpperCase())
+                .single();
+
+            document.getElementById('loading').classList.remove('show');
+
+            if (error || !room) {
+                CELLS.forEach(i => document.getElementById(`cell-${i}`).classList.add('error'));
+                document.getElementById('error-msg').innerText = '⚠️ لم يتم العثور على غرفة بهذا الرمز';
+                gsap.to('#code-cells', { x:8, duration:0.05, yoyo:true, repeat:5,
+                    onComplete: () => {
+                        CELLS.forEach(i => document.getElementById(`cell-${i}`).classList.remove('error'));
+                        btn.disabled = false;
+                    }
+                });
+                return;
+            }
+
+            if (room.status === 'playing') {
+                document.getElementById('error-msg').innerText = '⚠️ اللعبة بدأت بالفعل، لا يمكن الانضمام';
+                btn.disabled = false;
+                return;
+            }
+
+            saveRecentRoom(room.code);
+            navTo(`lobby.html?room=${room.code}`);
+        }
+
+        async function quickJoin() {
+            gsap.to('.quick-join', { scale:0.95, duration:0.1, yoyo:true, repeat:1 });
+            const { data: rooms } = await sb.from('rooms')
+                .select('code').eq('status','waiting')
+                .order('created_at', { ascending: false }).limit(1);
+            if (rooms && rooms.length > 0) {
+                fillCode(rooms[0].code);
+                setTimeout(joinRoom, 400);
+            } else {
+                document.getElementById('error-msg').innerText = '⚠️ لا توجد غرف مفتوحة الآن';
+            }
+        }
+
+        function saveRecentRoom(c) {
+            const recent = JSON.parse(localStorage.getItem('maf_recent') || '[]');
+            if (!recent.includes(c)) recent.unshift(c);
+            localStorage.setItem('maf_recent', JSON.stringify(recent.slice(0,5)));
+        }
+
+        function navTo(url) {
+            gsap.to('#main-container', { opacity:0, y:-20, duration:0.4,
+                onComplete: () => window.location.href = url });
+        }
+
+        window.onload = () => {
+            gsap.from('.code-panel', { y:40, opacity:0, duration:0.8, ease:'back.out(1.4)' });
+            gsap.from('.side-panel > *', { y:30, opacity:0, duration:0.6, stagger:0.15, delay:0.2, ease:'power2.out' });
+            gsap.from('.btn-back', { y:-20, opacity:0, duration:0.5 });
+            focusInput();
+        };
+
+        // السماح بالكتابة المباشرة من لوحة مفاتيح الجهاز
+        document.addEventListener('keydown', e => {
+            if (/^[A-Za-z0-9]$/.test(e.key)) pressKey(e.key.toUpperCase());
+            if (e.key === 'Backspace') deleteKey();
+        });
+    </script>
+</body>
+</html>

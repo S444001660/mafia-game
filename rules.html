@@ -1,0 +1,1160 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>قوانين اللعبة - مافيا</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Changa:wght@300;400;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #020308;
+    --panel: #0a0d1a;
+    --border: #1e2a4a;
+    --accent: #00d4ff;
+    --gold: #f0c040;
+    --red: #e03050;
+    --green: #30c060;
+    --purple: #9b59b6;
+    --text: #c8d8f0;
+    --dim: #5a6a8a;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Changa', sans-serif;
+    min-height: 100vh;
+    overflow: hidden;
+    position: relative;
+  }
+
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.08) 2px, rgba(0,0,0,0.08) 4px);
+    pointer-events: none;
+    z-index: 9999;
+  }
+
+  .stars {
+    position: fixed; inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+    z-index: 0;
+  }
+  .star {
+    position: absolute;
+    border-radius: 50%;
+    background: white;
+    animation: twinkle var(--d, 3s) ease-in-out infinite;
+    opacity: var(--o, 0.5);
+  }
+  @keyframes twinkle {
+    0%,100%{opacity:var(--o,.5);transform:scale(1)}
+    50%{opacity:calc(var(--o,.5)*0.3);transform:scale(0.7)}
+  }
+
+  .header {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: 60px;
+    background: linear-gradient(180deg, rgba(2,3,8,0.95) 0%, rgba(2,3,8,0.7) 100%);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 24px;
+    z-index: 100;
+  }
+  .header-logo {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 18px;
+    font-weight: 900;
+    color: var(--gold);
+    text-shadow: 0 0 20px rgba(240,192,64,0.6);
+    letter-spacing: 3px;
+  }
+  .back-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: 'Changa', sans-serif;
+    font-size: 14px;
+    padding: 8px 18px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .back-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    box-shadow: 0 0 12px rgba(0,212,255,0.3);
+  }
+
+  .progress-bar {
+    position: fixed;
+    top: 60px; left: 0; right: 0;
+    height: 3px;
+    background: var(--border);
+    z-index: 100;
+  }
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--gold));
+    transition: width 0.4s ease;
+    box-shadow: 0 0 8px rgba(0,212,255,0.6);
+  }
+
+  .nav-dots {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 10px;
+    z-index: 100;
+  }
+  .nav-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: var(--border);
+    border: 1px solid var(--dim);
+    cursor: pointer;
+    transition: all 0.3s;
+  }
+  .nav-dot.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    box-shadow: 0 0 10px rgba(0,212,255,0.6);
+    transform: scale(1.3);
+  }
+
+  .nav-arrows {
+    position: fixed;
+    bottom: 20px;
+    left: 0; right: 0;
+    display: flex;
+    justify-content: space-between;
+    padding: 0 30px;
+    z-index: 100;
+    pointer-events: none;
+  }
+  .nav-arrow {
+    pointer-events: all;
+    background: rgba(10,13,26,0.8);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-size: 20px;
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    backdrop-filter: blur(8px);
+  }
+  .nav-arrow:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    box-shadow: 0 0 12px rgba(0,212,255,0.4);
+  }
+  .nav-arrow:disabled {
+    opacity: 0.2;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+
+  .slides-wrap {
+    position: fixed;
+    inset: 63px 0 80px 0;
+    overflow: hidden;
+  }
+  .slide {
+    position: absolute;
+    inset: 0;
+    padding: 30px 40px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    overflow-y: auto;
+    opacity: 0;
+    pointer-events: none;
+  }
+  .slide.active {
+    opacity: 1;
+    pointer-events: all;
+  }
+  .slide::-webkit-scrollbar { width: 6px; }
+  .slide::-webkit-scrollbar-track { background: var(--bg); }
+  .slide::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  .slide-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 24px;
+    font-weight: 900;
+    color: var(--gold);
+    text-align: center;
+    margin-bottom: 6px;
+    text-shadow: 0 0 20px rgba(240,192,64,0.5);
+    letter-spacing: 2px;
+  }
+  .slide-subtitle {
+    font-size: 14px;
+    color: var(--dim);
+    text-align: center;
+    margin-bottom: 30px;
+  }
+
+  /* SLIDE 0 */
+  .home-logo {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 48px;
+    font-weight: 900;
+    color: var(--gold);
+    text-shadow: 0 0 40px rgba(240,192,64,0.8), 0 0 80px rgba(240,192,64,0.3);
+    letter-spacing: 6px;
+    margin-bottom: 8px;
+    animation: logoPulse 3s ease-in-out infinite;
+  }
+  @keyframes logoPulse {
+    0%,100%{text-shadow:0 0 40px rgba(240,192,64,0.8),0 0 80px rgba(240,192,64,0.3)}
+    50%{text-shadow:0 0 60px rgba(240,192,64,1),0 0 120px rgba(240,192,64,0.5)}
+  }
+  .home-tagline {
+    font-size: 16px;
+    color: var(--dim);
+    margin-bottom: 50px;
+    letter-spacing: 2px;
+  }
+  .home-menu {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    width: 100%;
+    max-width: 500px;
+  }
+  .home-btn {
+    background: rgba(10,13,26,0.8);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px 20px;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.3s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    position: relative;
+    overflow: hidden;
+  }
+  .home-btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at center, var(--btn-color,var(--accent)) 0%, transparent 70%);
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .home-btn:hover::before { opacity: 0.08; }
+  .home-btn:hover {
+    border-color: var(--btn-color, var(--accent));
+    box-shadow: 0 0 20px rgba(0,0,0,0.5), 0 0 0 1px var(--btn-color, var(--accent));
+    transform: translateY(-3px);
+  }
+  .home-btn-icon { font-size: 32px; }
+  .home-btn-label {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: 1px;
+  }
+  .home-btn-desc {
+    font-size: 11px;
+    color: var(--dim);
+    line-height: 1.4;
+  }
+
+  /* SLIDE 1 */
+  .basics-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    width: 100%;
+    max-width: 800px;
+    margin-bottom: 24px;
+  }
+  .basics-card {
+    background: rgba(10,13,26,0.8);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px 16px;
+    text-align: center;
+  }
+  .basics-card-icon { font-size: 28px; margin-bottom: 10px; }
+  .basics-card-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 11px;
+    color: var(--accent);
+    margin-bottom: 8px;
+    letter-spacing: 1px;
+  }
+  .basics-card-text {
+    font-size: 13px;
+    color: var(--text);
+    line-height: 1.6;
+  }
+  .teams-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    width: 100%;
+    max-width: 800px;
+  }
+  .team-card {
+    border-radius: 10px;
+    padding: 20px 16px;
+    text-align: center;
+    border: 1px solid transparent;
+  }
+  .team-card.town { background: rgba(48,192,96,0.08); border-color: rgba(48,192,96,0.3); }
+  .team-card.mafia { background: rgba(224,48,80,0.08); border-color: rgba(224,48,80,0.3); }
+  .team-card.neutral { background: rgba(155,89,182,0.08); border-color: rgba(155,89,182,0.3); }
+  .team-icon { font-size: 30px; margin-bottom: 8px; }
+  .team-name {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+  .team-card.town .team-name { color: var(--green); }
+  .team-card.mafia .team-name { color: var(--red); }
+  .team-card.neutral .team-name { color: var(--purple); }
+  .team-goal { font-size: 12px; color: var(--text); line-height: 1.5; }
+
+  /* SLIDE 2 */
+  .roles-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    width: 100%;
+    max-width: 900px;
+  }
+  .role-card {
+    background: rgba(10,13,26,0.8);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 12px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s;
+    position: relative;
+    overflow: hidden;
+  }
+  .role-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, var(--rc,#333) 0%, transparent 60%);
+    opacity: 0.15;
+  }
+  .role-card:hover {
+    border-color: var(--rc, var(--accent));
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4), 0 0 0 1px var(--rc, var(--accent));
+  }
+  .role-card-icon { font-size: 26px; margin-bottom: 8px; position: relative; }
+  .role-card-name {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--rc, var(--text));
+    margin-bottom: 4px;
+    position: relative;
+  }
+  .role-team-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-size: 10px;
+    margin-top: 6px;
+    position: relative;
+  }
+  .badge-town { background: rgba(48,192,96,0.2); color: var(--green); border: 1px solid rgba(48,192,96,0.3); }
+  .badge-mafia { background: rgba(224,48,80,0.2); color: var(--red); border: 1px solid rgba(224,48,80,0.3); }
+  .badge-neutral { background: rgba(155,89,182,0.2); color: var(--purple); border: 1px solid rgba(155,89,182,0.3); }
+
+  /* SLIDE 3 */
+  .phases-flow {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    width: 100%;
+    max-width: 700px;
+    align-items: center;
+  }
+  .phase-block {
+    background: rgba(10,13,26,0.8);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px 24px;
+    width: 100%;
+    display: flex;
+    align-items: flex-start;
+    gap: 18px;
+  }
+  .phase-block.day-phase { border-color: rgba(240,192,64,0.3); background: rgba(240,192,64,0.04); }
+  .phase-block.night-phase { border-color: rgba(0,100,200,0.3); background: rgba(0,50,150,0.06); }
+  .phase-block.vote-phase { border-color: rgba(224,48,80,0.3); background: rgba(224,48,80,0.04); }
+  .phase-arrow {
+    width: 2px; height: 24px;
+    background: linear-gradient(180deg, var(--border), transparent);
+    margin: 0 auto;
+  }
+  .phase-num {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 22px;
+    font-weight: 900;
+    min-width: 40px;
+    text-align: center;
+    line-height: 1;
+    margin-top: 4px;
+  }
+  .phase-info { flex: 1; }
+  .phase-name {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+  .phase-desc { font-size: 13px; color: var(--text); line-height: 1.6; }
+  .phase-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .phase-tag {
+    font-size: 11px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.1);
+    color: var(--dim);
+  }
+
+  .night-order {
+    background: rgba(10,13,26,0.8);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px 24px;
+    width: 100%;
+    max-width: 700px;
+    margin-top: 16px;
+  }
+  .night-order-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 12px;
+    color: var(--accent);
+    letter-spacing: 2px;
+    margin-bottom: 14px;
+    text-align: center;
+  }
+  .night-steps {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 0;
+  }
+  .night-step { display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center; }
+  .night-step-icon {
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+    border: 2px solid var(--border);
+  }
+  .night-step-label { font-size: 10px; color: var(--dim); max-width: 60px; text-align: center; }
+  .night-arrow { font-size: 18px; color: var(--border); margin: 0 6px; padding-bottom: 20px; }
+
+  /* SLIDE 4 */
+  .tips-cols {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    width: 100%;
+    max-width: 800px;
+  }
+  .tips-col {
+    background: rgba(10,13,26,0.8);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+  }
+  .tips-col.town { border-color: rgba(48,192,96,0.3); }
+  .tips-col.mafia { border-color: rgba(224,48,80,0.3); }
+  .tips-col-header {
+    display: flex; align-items: center; gap: 12px;
+    margin-bottom: 16px; padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  .tips-col-icon { font-size: 24px; }
+  .tips-col-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 13px; font-weight: 700;
+  }
+  .tips-col.town .tips-col-title { color: var(--green); }
+  .tips-col.mafia .tips-col-title { color: var(--red); }
+  .tip-item {
+    display: flex; align-items: flex-start; gap: 10px;
+    margin-bottom: 12px; padding-bottom: 12px;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+  .tip-item:last-child { margin-bottom: 0; padding-bottom: 0; border-bottom: none; }
+  .tip-number {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 11px; font-weight: 700;
+    color: var(--dim); min-width: 20px; margin-top: 3px;
+  }
+  .tip-text { font-size: 13px; color: var(--text); line-height: 1.6; }
+  .tip-text strong { color: var(--gold); }
+
+  .tips-neutral {
+    background: rgba(10,13,26,0.8);
+    border: 1px solid rgba(155,89,182,0.3);
+    border-radius: 12px;
+    padding: 20px;
+    width: 100%; max-width: 800px;
+    margin-top: 16px;
+  }
+  .tips-neutral-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 13px; color: var(--purple);
+    margin-bottom: 12px; text-align: center;
+  }
+  .neutral-tips-row { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; }
+  .neutral-tip {
+    text-align: center; padding: 12px;
+    background: rgba(155,89,182,0.08);
+    border-radius: 8px; border: 1px solid rgba(155,89,182,0.15);
+  }
+  .neutral-tip-icon { font-size: 20px; margin-bottom: 6px; }
+  .neutral-tip-name { font-family: 'Orbitron', sans-serif; font-size: 10px; color: var(--purple); margin-bottom: 4px; }
+  .neutral-tip-text { font-size: 11px; color: var(--dim); line-height: 1.5; }
+
+  /* Section divider */
+  .section-divider {
+    width: 100%; max-width: 900px;
+    display: flex; align-items: center; gap: 12px;
+    margin: 20px 0 16px;
+  }
+  .divider-line { flex: 1; height: 1px; background: var(--border); }
+  .divider-label {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 10px; color: var(--dim);
+    letter-spacing: 2px; white-space: nowrap;
+  }
+
+  /* Win badges */
+  .win-conditions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; justify-content: center; }
+  .win-badge {
+    padding: 6px 14px; border-radius: 20px;
+    font-size: 12px; font-family: 'Orbitron', sans-serif; font-weight: 700;
+  }
+  .win-badge.town { background: rgba(48,192,96,0.15); border: 1px solid rgba(48,192,96,0.4); color: var(--green); }
+  .win-badge.mafia { background: rgba(224,48,80,0.15); border: 1px solid rgba(224,48,80,0.4); color: var(--red); }
+  .win-badge.neutral { background: rgba(155,89,182,0.15); border: 1px solid rgba(155,89,182,0.4); color: var(--purple); }
+
+  /* Modal */
+  .modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.75);
+    backdrop-filter: blur(6px);
+    z-index: 500;
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.2s;
+  }
+  .modal-overlay.open { opacity: 1; pointer-events: all; }
+  .role-modal {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 32px;
+    width: 360px; max-width: 90vw;
+    position: relative;
+    transform: scale(0.9);
+    transition: transform 0.2s;
+    border-top: 3px solid var(--modal-color, var(--accent));
+  }
+  .modal-overlay.open .role-modal { transform: scale(1); }
+  .modal-close {
+    position: absolute; top: 14px; left: 14px;
+    background: none; border: none;
+    color: var(--dim); font-size: 20px; cursor: pointer;
+    width: 30px; height: 30px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 50%; transition: all 0.2s;
+  }
+  .modal-close:hover { background: rgba(255,255,255,0.1); color: var(--text); }
+  .modal-role-icon { font-size: 52px; text-align: center; margin-bottom: 8px; }
+  .modal-role-name {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 20px; font-weight: 900;
+    text-align: center;
+    color: var(--modal-color, var(--accent));
+    margin-bottom: 6px;
+  }
+  .modal-team-badge { text-align: center; margin-bottom: 20px; }
+  .modal-section-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 10px; color: var(--dim);
+    letter-spacing: 2px; margin-bottom: 6px; margin-top: 14px;
+  }
+  .modal-section-text { font-size: 14px; color: var(--text); line-height: 1.7; }
+  .modal-tip-box {
+    background: rgba(240,192,64,0.06);
+    border: 1px solid rgba(240,192,64,0.2);
+    border-radius: 8px;
+    padding: 10px 14px;
+    margin-top: 14px;
+    font-size: 13px; color: var(--text); line-height: 1.6;
+  }
+  .modal-tip-box::before { content: '💡 '; }
+</style>
+</head>
+<body>
+
+<div class="stars" id="stars"></div>
+
+<div class="header">
+  <div class="header-logo">MAFIA</div>
+  <button class="back-btn" onclick="location.href='index.html'">← رجوع</button>
+</div>
+
+<div class="progress-bar">
+  <div class="progress-fill" id="progressFill" style="width:0%"></div>
+</div>
+
+<div class="slides-wrap">
+
+  <!-- SLIDE 0: HOME -->
+  <div class="slide active" id="slide-0">
+    <div class="home-logo">MAFIA</div>
+    <div class="home-tagline">دليل اللعبة الكامل</div>
+    <div class="home-menu">
+      <div class="home-btn" style="--btn-color:#30c060" onclick="goToSlide(1)">
+        <div class="home-btn-icon">📖</div>
+        <div class="home-btn-label">أساسيات اللعبة</div>
+        <div class="home-btn-desc">عدد اللاعبين والفرق وأهداف الفوز</div>
+      </div>
+      <div class="home-btn" style="--btn-color:#9b59b6" onclick="goToSlide(2)">
+        <div class="home-btn-icon">🃏</div>
+        <div class="home-btn-label">جميع الأدوار</div>
+        <div class="home-btn-desc">13 دور مع شرح كامل لكل قدرة</div>
+      </div>
+      <div class="home-btn" style="--btn-color:#00d4ff" onclick="goToSlide(3)">
+        <div class="home-btn-icon">🔄</div>
+        <div class="home-btn-label">مراحل اللعبة</div>
+        <div class="home-btn-desc">النهار والليل والتصويت والتنفيذ</div>
+      </div>
+      <div class="home-btn" style="--btn-color:#f0c040" onclick="goToSlide(4)">
+        <div class="home-btn-icon">⭐</div>
+        <div class="home-btn-label">نصائح الفوز</div>
+        <div class="home-btn-desc">استراتيجيات لكل فريق ودور</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 1: BASICS -->
+  <div class="slide" id="slide-1">
+    <div class="slide-title">أساسيات اللعبة</div>
+    <div class="slide-subtitle">كل ما تحتاج معرفته قبل البدء</div>
+
+    <div class="basics-grid">
+      <div class="basics-card">
+        <div class="basics-card-icon">👥</div>
+        <div class="basics-card-title">عدد اللاعبين</div>
+        <div class="basics-card-text">من <strong>6</strong> إلى <strong>16</strong> لاعب. الأفضل بين 8 و12 لتجربة متوازنة.</div>
+      </div>
+      <div class="basics-card">
+        <div class="basics-card-icon">⏱️</div>
+        <div class="basics-card-title">مدة الجولة</div>
+        <div class="basics-card-text">من <strong>15</strong> إلى <strong>40</strong> دقيقة حسب عدد اللاعبين وطريقة اللعب.</div>
+      </div>
+      <div class="basics-card">
+        <div class="basics-card-icon">🎭</div>
+        <div class="basics-card-title">الأدوار</div>
+        <div class="basics-card-text">كل لاعب يحصل على دور سري. الهدف إخفاء هويتك وكشف الآخرين.</div>
+      </div>
+    </div>
+
+    <div class="section-divider">
+      <div class="divider-line"></div>
+      <div class="divider-label">الفرق والأهداف</div>
+      <div class="divider-line"></div>
+    </div>
+
+    <div class="teams-row">
+      <div class="team-card town">
+        <div class="team-icon">🏘️</div>
+        <div class="team-name">فريق المدينة</div>
+        <div class="team-goal">كشف وإقصاء جميع أفراد المافيا والتهديدات المحايدة قبل أن تسيطر عليهم.</div>
+        <div style="margin-top:10px;font-size:11px;color:var(--green)">الأغلبية · معلومات محدودة</div>
+      </div>
+      <div class="team-card mafia">
+        <div class="team-icon">🔫</div>
+        <div class="team-name">فريق المافيا</div>
+        <div class="team-goal">تصفية المواطنين حتى يصبح عدد المافيا مساوياً أو أكبر من المواطنين.</div>
+        <div style="margin-top:10px;font-size:11px;color:var(--red)">الأقلية · يعرف بعضهم</div>
+      </div>
+      <div class="team-card neutral">
+        <div class="team-icon">⚖️</div>
+        <div class="team-name">الأدوار المحايدة</div>
+        <div class="team-goal">لكل دور محايد هدف خاص به مستقل عن الفريقين، وقد يضر بالجميع.</div>
+        <div style="margin-top:10px;font-size:11px;color:var(--purple)">أهداف خاصة · خطر على الجميع</div>
+      </div>
+    </div>
+
+    <div class="section-divider">
+      <div class="divider-line"></div>
+      <div class="divider-label">شروط الفوز</div>
+      <div class="divider-line"></div>
+    </div>
+
+    <div class="win-conditions">
+      <div class="win-badge town">🏘️ مدينة — إقصاء كل المافيا</div>
+      <div class="win-badge mafia">🔫 مافيا — مساواة عدد المواطنين</div>
+      <div class="win-badge neutral">🃏 مهرج — يُقصى بالتصويت</div>
+      <div class="win-badge neutral">🗡️ قاتل — يبقى وحيداً</div>
+      <div class="win-badge neutral">⚖️ منتقم — يُقصى هدفه</div>
+    </div>
+  </div>
+
+  <!-- SLIDE 2: ROLES -->
+  <div class="slide" id="slide-2">
+    <div class="slide-title">جميع الأدوار</div>
+    <div class="slide-subtitle">اضغط على أي دور لعرض تفاصيله الكاملة</div>
+
+    <div class="section-divider">
+      <div class="divider-line"></div>
+      <div class="divider-label">فريق المدينة</div>
+      <div class="divider-line"></div>
+    </div>
+    <div class="roles-grid" id="townRolesGrid"></div>
+
+    <div class="section-divider">
+      <div class="divider-line"></div>
+      <div class="divider-label">فريق المافيا</div>
+      <div class="divider-line"></div>
+    </div>
+    <div class="roles-grid" id="mafiaRolesGrid"></div>
+
+    <div class="section-divider">
+      <div class="divider-line"></div>
+      <div class="divider-label">الأدوار المحايدة</div>
+      <div class="divider-line"></div>
+    </div>
+    <div class="roles-grid" id="neutralRolesGrid"></div>
+  </div>
+
+  <!-- SLIDE 3: PHASES -->
+  <div class="slide" id="slide-3">
+    <div class="slide-title">مراحل اللعبة</div>
+    <div class="slide-subtitle">كيف تسير الجولة من البداية حتى النهاية</div>
+
+    <div class="phases-flow">
+      <div class="phase-block day-phase">
+        <div class="phase-num" style="color:var(--gold)">①</div>
+        <div class="phase-info">
+          <div class="phase-name" style="color:var(--gold)">☀️ النهار — النقاش</div>
+          <div class="phase-desc">يتحدث جميع اللاعبين بحرية. يمكن الادعاء بأي دور، الاتهام، الدفاع، وكشف المعلومات. الهدف هو إقناع الآخرين بمن يستحق الإقصاء.</div>
+          <div class="phase-actions">
+            <div class="phase-tag">💬 نقاش مفتوح</div>
+            <div class="phase-tag">🎭 ادعاء الأدوار</div>
+            <div class="phase-tag">🤝 بناء التحالفات</div>
+          </div>
+        </div>
+      </div>
+      <div class="phase-arrow"></div>
+
+      <div class="phase-block vote-phase">
+        <div class="phase-num" style="color:var(--red)">②</div>
+        <div class="phase-info">
+          <div class="phase-name" style="color:var(--red)">🗳️ التصويت — الإقصاء</div>
+          <div class="phase-desc">كل لاعب يصوت على من يريد إقصاءه. الأكثر أصواتاً يُقصى. في التعادل لا أحد يُقصى. العمدة صوته مضاعف عند الكشف.</div>
+          <div class="phase-actions">
+            <div class="phase-tag">🗳️ تصويت علني</div>
+            <div class="phase-tag">⚖️ الأغلبية تقرر</div>
+            <div class="phase-tag">👑 صوت العمدة مضاعف</div>
+          </div>
+        </div>
+      </div>
+      <div class="phase-arrow"></div>
+
+      <div class="phase-block night-phase">
+        <div class="phase-num" style="color:#6699ff">③</div>
+        <div class="phase-info">
+          <div class="phase-name" style="color:#6699ff">🌙 الليل — الأدوار تتحرك</div>
+          <div class="phase-desc">الجميع ينام عدا أصحاب الأدوار. كل دور يؤدي مهمته سراً. تُنفَّذ الأفعال بالترتيب المحدد ثم تُعلن النتائج صباحاً.</div>
+          <div class="phase-actions">
+            <div class="phase-tag">🧙 الساحرة أولاً</div>
+            <div class="phase-tag">🔫 المافيا تقتل</div>
+            <div class="phase-tag">🛡️ الحارس يتدخل</div>
+            <div class="phase-tag">💊 الطبيب يحفظ</div>
+            <div class="phase-tag">🔍 المحقق يحقق</div>
+          </div>
+        </div>
+      </div>
+      <div class="phase-arrow"></div>
+
+      <div class="phase-block" style="border-color:rgba(155,89,182,0.3);background:rgba(155,89,182,0.04)">
+        <div class="phase-num" style="color:var(--purple)">④</div>
+        <div class="phase-info">
+          <div class="phase-name" style="color:var(--purple)">📢 إعلان النتائج</div>
+          <div class="phase-desc">يُعلن عمن قُتل الليلة. من أُنقذ لا يُذكر. المحقق يعرف نتيجة تحقيقه فقط. تبدأ جولة نهار جديدة.</div>
+          <div class="phase-actions">
+            <div class="phase-tag">📢 إعلان القتلى</div>
+            <div class="phase-tag">🔄 جولة جديدة</div>
+          </div>
+        </div>
+      </div>
+      <div class="phase-arrow"></div>
+
+      <div class="phase-block" style="border-color:rgba(240,192,64,0.3);background:rgba(240,192,64,0.04)">
+        <div class="phase-num" style="color:var(--gold)">⑤</div>
+        <div class="phase-info">
+          <div class="phase-name" style="color:var(--gold)">🏆 نهاية اللعبة</div>
+          <div class="phase-desc">تنتهي اللعبة عند تحقق شرط فوز أي فريق. يُكشف دور الجميع ويُمنح المنتصرون النقاط والجواهر.</div>
+          <div class="phase-actions">
+            <div class="phase-tag">🎉 إعلان الفائزين</div>
+            <div class="phase-tag">💎 جوائز الجواهر</div>
+            <div class="phase-tag">📊 إحصائيات</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="night-order">
+      <div class="night-order-title">ترتيب تنفيذ أحداث الليل</div>
+      <div class="night-steps">
+        <div class="night-step">
+          <div class="night-step-icon" style="background:rgba(26,188,156,0.15);border-color:rgba(26,188,156,0.4)">🧙</div>
+          <div class="night-step-label">الساحرة تحوّل</div>
+        </div>
+        <div class="night-arrow">→</div>
+        <div class="night-step">
+          <div class="night-step-icon" style="background:rgba(224,48,80,0.15);border-color:rgba(224,48,80,0.4)">🔫</div>
+          <div class="night-step-label">المافيا تقتل</div>
+        </div>
+        <div class="night-arrow">→</div>
+        <div class="night-step">
+          <div class="night-step-icon" style="background:rgba(125,60,152,0.15);border-color:rgba(125,60,152,0.4)">🗡️</div>
+          <div class="night-step-label">القاتل يقتل</div>
+        </div>
+        <div class="night-arrow">→</div>
+        <div class="night-step">
+          <div class="night-step-icon" style="background:rgba(107,138,58,0.15);border-color:rgba(107,138,58,0.4)">🛡️</div>
+          <div class="night-step-label">الحارس يتدخل</div>
+        </div>
+        <div class="night-arrow">→</div>
+        <div class="night-step">
+          <div class="night-step-icon" style="background:rgba(58,138,85,0.15);border-color:rgba(58,138,85,0.4)">💊</div>
+          <div class="night-step-label">الطبيب يحفظ</div>
+        </div>
+        <div class="night-arrow">→</div>
+        <div class="night-step">
+          <div class="night-step-icon" style="background:rgba(44,106,160,0.15);border-color:rgba(44,106,160,0.4)">🔍</div>
+          <div class="night-step-label">المحقق يحقق</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 4: TIPS -->
+  <div class="slide" id="slide-4">
+    <div class="slide-title">نصائح الفوز</div>
+    <div class="slide-subtitle">استراتيجيات المحترفين لكل فريق ودور</div>
+
+    <div class="tips-cols">
+      <div class="tips-col town">
+        <div class="tips-col-header">
+          <div class="tips-col-icon">🏘️</div>
+          <div class="tips-col-title">نصائح فريق المدينة</div>
+        </div>
+        <div class="tip-item">
+          <div class="tip-number">01</div>
+          <div class="tip-text"><strong>لاحظ الصامتين</strong> — اللاعب الذي يتجنب الكلام والاتهام غالباً لديه ما يخفيه.</div>
+        </div>
+        <div class="tip-item">
+          <div class="tip-number">02</div>
+          <div class="tip-text"><strong>احمِ المحقق</strong> — الدفاع عنه في الليالي الأولى يمنح المدينة ميزة كبيرة.</div>
+        </div>
+        <div class="tip-item">
+          <div class="tip-number">03</div>
+          <div class="tip-text"><strong>لا تكشف دورك مبكراً</strong> — الكشف العلني يجعلك هدفاً ليلياً سهلاً.</div>
+        </div>
+        <div class="tip-item">
+          <div class="tip-number">04</div>
+          <div class="tip-text"><strong>تتبع التصويت</strong> — من يصوت معاً باستمرار قد يكون في نفس الفريق.</div>
+        </div>
+        <div class="tip-item">
+          <div class="tip-number">05</div>
+          <div class="tip-text"><strong>ثق بالأرقام</strong> — إذا وصفك المحقق بالاشتباه مرتين، ربما هو على حق.</div>
+        </div>
+      </div>
+
+      <div class="tips-col mafia">
+        <div class="tips-col-header">
+          <div class="tips-col-icon">🔫</div>
+          <div class="tips-col-title">نصائح فريق المافيا</div>
+        </div>
+        <div class="tip-item">
+          <div class="tip-number">01</div>
+          <div class="tip-text"><strong>ادّعِ دوراً مدنياً</strong> — ادعاء المواطن البسيط أكثر أماناً من ادعاء دور خاص.</div>
+        </div>
+        <div class="tip-item">
+          <div class="tip-number">02</div>
+          <div class="tip-text"><strong>اتهم بحذر</strong> — الاتهام القوي جداً يجعلك مشتبهاً. اتهم بتردد مدروس.</div>
+        </div>
+        <div class="tip-item">
+          <div class="tip-number">03</div>
+          <div class="tip-text"><strong>استهدف المحقق أولاً</strong> — تصفيته في الليلة الأولى تضعف المدينة كثيراً.</div>
+        </div>
+        <div class="tip-item">
+          <div class="tip-number">04</div>
+          <div class="tip-text"><strong>تفرّق في التصويت</strong> — المافيا يصوتون معاً بشكل واضح يكشفهم. وزّع الأصوات.</div>
+        </div>
+        <div class="tip-item">
+          <div class="tip-number">05</div>
+          <div class="tip-text"><strong>العراب محمي</strong> — المحقق يراه بريئاً، استخدم ذلك ليكون الناطق الرسمي.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tips-neutral">
+      <div class="tips-neutral-title">⚖️ الأدوار المحايدة — كيف تفوز؟</div>
+      <div class="neutral-tips-row">
+        <div class="neutral-tip">
+          <div class="neutral-tip-icon">🃏</div>
+          <div class="neutral-tip-name">المهرج</div>
+          <div class="neutral-tip-text">تصرف بشكل مريب حتى يصوت الناس ضدك. الفوز هو أن تُقصى بالتصويت وليس القتل.</div>
+        </div>
+        <div class="neutral-tip">
+          <div class="neutral-tip-icon">🗡️</div>
+          <div class="neutral-tip-name">القاتل المتسلسل</div>
+          <div class="neutral-tip-text">اقتل ليلياً واخفِ هويتك نهاراً. هدفك البقاء حتى تصبح من آخر اثنين.</div>
+        </div>
+        <div class="neutral-tip">
+          <div class="neutral-tip-icon">⚖️</div>
+          <div class="neutral-tip-name">المنتقم</div>
+          <div class="neutral-tip-text">ابنِ قضية قوية ضد هدفك المحدد. إذا مات ليلاً تحولت إلى المهرج تلقائياً.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Navigation -->
+<div class="nav-arrows">
+  <button class="nav-arrow" id="prevBtn" onclick="navigate(-1)" disabled>→</button>
+  <div class="nav-dots" id="navDots"></div>
+  <button class="nav-arrow" id="nextBtn" onclick="navigate(1)">←</button>
+</div>
+
+<!-- Role Modal -->
+<div class="modal-overlay" id="roleModal" onclick="closeRoleModal(event)">
+  <div class="role-modal" id="roleModalInner">
+    <button class="modal-close" onclick="closeRoleModal()">✕</button>
+    <div class="modal-role-icon" id="modalIcon"></div>
+    <div class="modal-role-name" id="modalName"></div>
+    <div class="modal-team-badge" id="modalTeam"></div>
+    <div class="modal-section-title">القدرة</div>
+    <div class="modal-section-text" id="modalAbility"></div>
+    <div class="modal-section-title">الهدف</div>
+    <div class="modal-section-text" id="modalGoal"></div>
+    <div class="modal-tip-box" id="modalTip"></div>
+  </div>
+</div>
+
+<script>
+const ROLES_DATA = [
+  { id:'doctor', team:'town', name:'الطبيب', icon:'💊', color:'#3a8a55',
+    ability:'كل ليلة يختار لاعباً واحداً لحفظه من القتل. لا يمكنه اختيار نفسه ليلتين متتاليتين.',
+    goal:'حماية المواطنين المهمين وإبقائهم على قيد الحياة حتى تفوز المدينة.',
+    tip:'حاول معرفة دور المحقق واحفظه. لا تكشف دورك إلا للضرورة القصوى.' },
+  { id:'sheriff', team:'town', name:'المحقق', icon:'🔍', color:'#2c6aa0',
+    ability:'كل ليلة يحقق في لاعب واحد ويعرف إن كان في المافيا أم لا. العراب يبدو بريئاً دائماً.',
+    goal:'جمع المعلومات وتوجيه المدينة نحو القرارات الصحيحة في التصويت.',
+    tip:'لا تكشف معلوماتك فوراً. ابنِ الثقة أولاً ثم اكشف ما جمعت في اللحظة المناسبة.' },
+  { id:'bodyguard', team:'town', name:'الحارس الشخصي', icon:'🛡️', color:'#6b8a3a',
+    ability:'يختار لاعباً ليلياً لحراسته. إذا هاجم أحد هذا اللاعب، يموت الحارس بدلاً عنه ويقتل المهاجم.',
+    goal:'حماية اللاعبين المهمين بالتضحية بنفسه إن لزم الأمر.',
+    tip:'احرس المحقق أو الطبيب. موتك يعني أنك قتلت مهاجماً — وهذا انتصار كبير!' },
+  { id:'mayor', team:'town', name:'العمدة', icon:'👑', color:'#e5c05c',
+    ability:'عند الكشف عن هويته، يصبح صوته يساوي صوتين في التصويت.',
+    goal:'استخدام ثقل التصويت المضاعف في اللحظات الحاسمة لإقصاء المافيا.',
+    tip:'لا تكشف نفسك مبكراً. انتظر التصويت على شخص مشتبه به بقوة ثم اكشف.' },
+  { id:'medium', team:'town', name:'المشعوذ', icon:'🔮', color:'#9d50bb',
+    ability:'يمكنه التواصل مع اللاعبين المقصيين والحصول على معلومات منهم في الليل.',
+    goal:'جمع الأدلة من اللاعبين الميتين وإيصالها للأحياء لمساعدة المدينة.',
+    tip:'الميتون يعرفون أكثر من الأحياء أحياناً. استخدم قناتهم بحكمة وحذر.' },
+  { id:'citizen', team:'town', name:'المواطن', icon:'👤', color:'#4a5568',
+    ability:'لا توجد قدرة خاصة. الصوت في النهار هو سلاحه الوحيد.',
+    goal:'الملاحظة الدقيقة وقيادة النقاش نحو إقصاء المافيا.',
+    tip:'المواطن البارع هو من يقنع الآخرين بحجج منطقية. ركز على تحليل السلوك.' },
+  { id:'godfather', team:'mafia', name:'العراب', icon:'🤵', color:'#d93838',
+    ability:'يبدو بريئاً للمحقق دائماً. يوجّه المافيا ليلاً ويختار الهدف.',
+    goal:'البقاء خفياً أطول وقت ممكن وقيادة المافيا نحو الفوز.',
+    tip:'استغل حصانتك من التحقيق. إذا كشفك المحقق ولم يُصدَّق، فأنت في أمان.' },
+  { id:'mafioso', team:'mafia', name:'المنفذ', icon:'🔫', color:'#c0392b',
+    ability:'ينفذ أوامر العراب بالقتل. إذا مات العراب يصبح هو قائد المافيا.',
+    goal:'تنفيذ عمليات القتل الليلية وحماية هوية العراب من الكشف.',
+    tip:'إذا مات العراب ورثت قدرته القيادية. كن مستعداً دائماً لتولي القيادة.' },
+  { id:'framer', team:'mafia', name:'المزوّر', icon:'🖼️', color:'#8b1a1a',
+    ability:'يختار لاعباً ليلاً يجعله يبدو مذنباً للمحقق تلك الليلة.',
+    goal:'تضليل المحقق وجعله يوجه الاتهامات نحو الأبرياء.',
+    tip:'زوِّر المواطنين الأبرياء الذين يثق بهم الناس كثيراً لإحداث فوضى.' },
+  { id:'consigliere', team:'mafia', name:'المتسلل', icon:'🕵️', color:'#922b21',
+    ability:'يحقق في لاعب ليلاً ويعرف دوره الحقيقي بدقة كاملة.',
+    goal:'اكتشاف الأدوار الخطيرة كالمحقق والطبيب لمساعدة المافيا على استهدافهم.',
+    tip:'ابحث عن المحقق والطبيب أولاً. أبلغ العراب ليستهدفهم في الليلة المثالية.' },
+  { id:'jester', team:'neutral', name:'المهرج', icon:'🃏', color:'#f39c12',
+    ability:'لا توجد قدرة ليلية. هدفه الوحيد أن يُقصى بالتصويت خلال النهار.',
+    goal:'التمثيل كشخص مشتبه به حتى يصوت عليه اللاعبون ويخرج.',
+    tip:'تصرف بشكل غريب ومريب. لكن لا تكن واضحاً جداً أو سيفهمون أنك المهرج.' },
+  { id:'sk', team:'neutral', name:'القاتل المتسلسل', icon:'🗡️', color:'#7d3c98',
+    ability:'يقتل لاعباً كل ليلة. له مناعة جزئية من الطبيب — ينجح القتل 50% من الوقت.',
+    goal:'البقاء حتى يصبح آخر لاعبين أو آخر لاعب على قيد الحياة.',
+    tip:'اقتل بصمت واخفِ هويتك. أنت تحارب كلا الفريقين في آنٍ واحد.' },
+  { id:'executioner', team:'neutral', name:'المنتقم', icon:'⚖️', color:'#884ea0',
+    ability:'لديه هدف محدد. إذا أُقصي هدفه بالتصويت يفوز. إذا مات هدفه ليلاً يتحول للمهرج.',
+    goal:'إقناع المدينة أو المافيا بإقصاء هدفه المحدد بأي طريقة ممكنة.',
+    tip:'ادرس هدفك جيداً. ابنِ قضية قوية ضده. إذا مات ليلاً تذكر أنك أصبحت المهرج.' },
+  { id:'witch', team:'neutral', name:'الساحرة', icon:'🧙', color:'#1abc9c',
+    ability:'تعرف أهداف المافيا كل ليلة وتملك قدرة واحدة لتحويل ضربة المافيا نحو هدف آخر.',
+    goal:'استخدام قوتها لحماية حلفائها أو إيذاء أعدائها في اللحظة المناسبة.',
+    tip:'لا تستخدم قدرتك إلا مرة واحدة فقط — اجعلها تستحق. يمكنك توجيه المافيا لقتل أحد رفاقهم!' }
+];
+
+let currentSlide = 0;
+const TOTAL_SLIDES = 5;
+
+function init() {
+  createStars();
+  buildNavDots();
+  buildRolesGrid();
+  updateUI();
+}
+
+function createStars() {
+  const c = document.getElementById('stars');
+  for (let i = 0; i < 80; i++) {
+    const s = document.createElement('div');
+    s.className = 'star';
+    const sz = Math.random() * 2.5 + 0.5;
+    s.style.cssText = `width:${sz}px;height:${sz}px;top:${Math.random()*100}%;left:${Math.random()*100}%;--d:${2+Math.random()*4}s;--o:${0.2+Math.random()*0.6};animation-delay:${Math.random()*4}s`;
+    c.appendChild(s);
+  }
+}
+
+function buildNavDots() {
+  const c = document.getElementById('navDots');
+  const labels = ['الرئيسية','الأساسيات','الأدوار','المراحل','النصائح'];
+  for (let i = 0; i < TOTAL_SLIDES; i++) {
+    const d = document.createElement('div');
+    d.className = 'nav-dot' + (i===0?' active':'');
+    d.title = labels[i];
+    d.onclick = () => goToSlide(i);
+    c.appendChild(d);
+  }
+}
+
+function buildRolesGrid() {
+  const town = ROLES_DATA.filter(r => r.team === 'town');
+  const mafia = ROLES_DATA.filter(r => r.team === 'mafia');
+  const neutral = ROLES_DATA.filter(r => r.team === 'neutral');
+
+  const badge = (team) => {
+    const l = {town:'المدينة',mafia:'المافيا',neutral:'محايد'};
+    return `<span class="role-team-badge badge-${team}">${l[team]}</span>`;
+  };
+  const card = (r) => `
+    <div class="role-card" style="--rc:${r.color}" onclick="openRoleModal('${r.id}')">
+      <div class="role-card-icon">${r.icon}</div>
+      <div class="role-card-name">${r.name}</div>
+      ${badge(r.team)}
+    </div>`;
+
+  document.getElementById('townRolesGrid').innerHTML = town.map(card).join('');
+  document.getElementById('mafiaRolesGrid').innerHTML = mafia.map(card).join('');
+  document.getElementById('neutralRolesGrid').innerHTML = neutral.map(card).join('');
+}
+
+function goToSlide(index) {
+  if (index === currentSlide || index < 0 || index >= TOTAL_SLIDES) return;
+  const dir = index > currentSlide ? 1 : -1;
+  const from = document.getElementById('slide-' + currentSlide);
+  const to = document.getElementById('slide-' + index);
+
+  gsap.to(from, { x: dir * -60, opacity: 0, duration: 0.3, ease: 'power2.in',
+    onComplete: () => { from.classList.remove('active'); gsap.set(from, {x:0,opacity:0}); }
+  });
+  gsap.set(to, { x: dir * 60, opacity: 0 });
+  to.classList.add('active');
+  gsap.to(to, { x: 0, opacity: 1, duration: 0.35, ease: 'power2.out', delay: 0.1 });
+
+  currentSlide = index;
+  updateUI();
+}
+
+function navigate(dir) { goToSlide(currentSlide + dir); }
+
+function updateUI() {
+  document.querySelectorAll('.nav-dot').forEach((d,i) => d.classList.toggle('active', i===currentSlide));
+  document.getElementById('prevBtn').disabled = currentSlide === 0;
+  document.getElementById('nextBtn').disabled = currentSlide === TOTAL_SLIDES - 1;
+  document.getElementById('progressFill').style.width = (currentSlide / (TOTAL_SLIDES-1) * 100) + '%';
+}
+
+function openRoleModal(roleId) {
+  const r = ROLES_DATA.find(x => x.id === roleId);
+  if (!r) return;
+  document.getElementById('roleModalInner').style.setProperty('--modal-color', r.color);
+  document.getElementById('modalIcon').textContent = r.icon;
+  document.getElementById('modalName').textContent = r.name;
+  const tl = {town:'فريق المدينة',mafia:'فريق المافيا',neutral:'دور محايد'};
+  const tc = {town:'badge-town',mafia:'badge-mafia',neutral:'badge-neutral'};
+  document.getElementById('modalTeam').innerHTML = `<span class="role-team-badge ${tc[r.team]}">${tl[r.team]}</span>`;
+  document.getElementById('modalAbility').textContent = r.ability;
+  document.getElementById('modalGoal').textContent = r.goal;
+  document.getElementById('modalTip').textContent = r.tip;
+  document.getElementById('roleModal').classList.add('open');
+  gsap.fromTo('#roleModalInner', {scale:0.85,opacity:0}, {scale:1,opacity:1,duration:0.3,ease:'back.out(1.4)'});
+}
+
+function closeRoleModal(event) {
+  if (event && event.target !== document.getElementById('roleModal')) return;
+  gsap.to('#roleModalInner', { scale:0.85, opacity:0, duration:0.2, ease:'power2.in',
+    onComplete: () => document.getElementById('roleModal').classList.remove('open')
+  });
+}
+
+document.addEventListener('keydown', e => {
+  if (document.getElementById('roleModal').classList.contains('open')) {
+    if (e.key === 'Escape') closeRoleModal();
+    return;
+  }
+  if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') navigate(1);
+  if (e.key === 'ArrowRight' || e.key === 'ArrowUp') navigate(-1);
+});
+
+init();
+</script>
+</body>
+</html>

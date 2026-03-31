@@ -1,0 +1,1346 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>المجموعة — مافيا</title>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Changa:wght@300;400;600;700&display=swap" rel="stylesheet" />
+
+  <!-- GSAP CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+
+  <style>
+    /* ─────────────────────────────────────────────
+       CSS VARIABLES & RESET
+    ───────────────────────────────────────────── */
+    :root {
+      --clr-create:  #ff0055;
+      --clr-join:    #00d2ff;
+      --clr-gold:    #e5c05c;
+      --clr-green:   #3a8a55;
+      --clr-purple:  #9d50bb;
+
+      --clr-bg:      #020308;
+      --clr-panel:   rgba(10, 14, 32, 0.85);
+      --clr-border:  rgba(255,255,255,0.08);
+      --clr-text:    #c8d0e8;
+      --clr-dim:     #5a6280;
+
+      --rarity-common:    #7a8299;
+      --rarity-rare:      #00d2ff;
+      --rarity-epic:      #9d50bb;
+      --rarity-legendary: #e5c05c;
+
+      --transition: 0.35s cubic-bezier(0.23, 1, 0.32, 1);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      min-height: 100vh;
+      background: radial-gradient(circle at center, #0a0e20 0%, #020308 100%);
+      background-attachment: fixed;
+      font-family: 'Changa', sans-serif;
+      color: var(--clr-text);
+      overflow-x: hidden;
+    }
+
+    /* ─────────────────────────────────────────────
+       CRT OVERLAY
+    ───────────────────────────────────────────── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 9999;
+      background:
+        repeating-linear-gradient(
+          0deg,
+          rgba(0,0,0,0.07) 0px,
+          rgba(0,0,0,0.07) 1px,
+          transparent 1px,
+          transparent 3px
+        );
+      animation: crtFlicker 8s infinite;
+    }
+
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 9998;
+      background: radial-gradient(ellipse at center,
+        transparent 60%,
+        rgba(0,0,0,0.55) 100%
+      );
+    }
+
+    @keyframes crtFlicker {
+      0%,100% { opacity: 1; }
+      92%      { opacity: 1; }
+      93%      { opacity: 0.85; }
+      94%      { opacity: 1; }
+      97%      { opacity: 1; }
+      98%      { opacity: 0.9; }
+      99%      { opacity: 1; }
+    }
+
+    /* ─────────────────────────────────────────────
+       SCROLLBAR
+    ───────────────────────────────────────────── */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: #05070f; }
+    ::-webkit-scrollbar-thumb { background: var(--clr-purple); border-radius: 3px; }
+
+    /* ─────────────────────────────────────────────
+       WRAPPER
+    ───────────────────────────────────────────── */
+    .page-wrapper {
+      max-width: 1300px;
+      margin: 0 auto;
+      padding: 0 24px 80px;
+    }
+
+    /* ─────────────────────────────────────────────
+       TOP BAR
+    ───────────────────────────────────────────── */
+    .top-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 28px 0 20px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: linear-gradient(to bottom, #020308 70%, transparent);
+    }
+
+    .btn-back {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--clr-panel);
+      border: 1px solid var(--clr-border);
+      border-radius: 10px;
+      padding: 10px 20px;
+      color: var(--clr-text);
+      font-family: 'Changa', sans-serif;
+      font-size: 0.95rem;
+      cursor: pointer;
+      transition: var(--transition);
+      text-decoration: none;
+      backdrop-filter: blur(8px);
+    }
+
+    .btn-back:hover {
+      border-color: var(--clr-join);
+      color: var(--clr-join);
+      box-shadow: 0 0 18px rgba(0, 210, 255, 0.25);
+    }
+
+    .btn-back svg { width: 18px; height: 18px; }
+
+    .top-title {
+      text-align: center;
+    }
+
+    .top-title h1 {
+      font-family: 'Orbitron', sans-serif;
+      font-size: clamp(1.6rem, 3vw, 2.6rem);
+      font-weight: 900;
+      letter-spacing: 6px;
+      background: linear-gradient(135deg, var(--clr-join) 0%, var(--clr-purple) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      text-shadow: none;
+    }
+
+    .top-title .collection-count {
+      font-family: 'Changa', sans-serif;
+      font-size: 0.9rem;
+      color: var(--clr-dim);
+      margin-top: 4px;
+      letter-spacing: 2px;
+    }
+
+    .top-title .collection-count span {
+      color: var(--clr-gold);
+      font-weight: 700;
+    }
+
+    /* ─────────────────────────────────────────────
+       STATS BAR
+    ───────────────────────────────────────────── */
+    .stats-bar {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+      margin-bottom: 28px;
+    }
+
+    .stat-card {
+      background: var(--clr-panel);
+      border: 1px solid var(--clr-border);
+      border-radius: 14px;
+      padding: 18px 20px;
+      text-align: center;
+      backdrop-filter: blur(10px);
+      position: relative;
+      overflow: hidden;
+      transition: var(--transition);
+    }
+
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+      border-radius: 14px 14px 0 0;
+    }
+
+    .stat-card:nth-child(1)::before { background: var(--clr-join); }
+    .stat-card:nth-child(2)::before { background: var(--clr-green); }
+    .stat-card:nth-child(3)::before { background: var(--clr-purple); }
+    .stat-card:nth-child(4)::before { background: var(--clr-gold); }
+
+    .stat-card:hover { transform: translateY(-3px); }
+
+    .stat-number {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 2.2rem;
+      font-weight: 900;
+      line-height: 1;
+      margin-bottom: 6px;
+    }
+
+    .stat-card:nth-child(1) .stat-number { color: var(--clr-join); }
+    .stat-card:nth-child(2) .stat-number { color: var(--clr-green); }
+    .stat-card:nth-child(3) .stat-number { color: var(--clr-purple); }
+    .stat-card:nth-child(4) .stat-number { color: var(--clr-gold); }
+
+    .stat-label {
+      font-size: 0.82rem;
+      color: var(--clr-dim);
+      letter-spacing: 1px;
+    }
+
+    /* ─────────────────────────────────────────────
+       FILTER TABS
+    ───────────────────────────────────────────── */
+    .filter-tabs {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 28px;
+      flex-wrap: wrap;
+    }
+
+    .tab-btn {
+      background: var(--clr-panel);
+      border: 1px solid var(--clr-border);
+      border-radius: 30px;
+      padding: 9px 22px;
+      color: var(--clr-dim);
+      font-family: 'Changa', sans-serif;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: var(--transition);
+      backdrop-filter: blur(8px);
+    }
+
+    .tab-btn:hover {
+      border-color: var(--clr-join);
+      color: var(--clr-join);
+    }
+
+    .tab-btn.active {
+      background: rgba(0, 210, 255, 0.12);
+      border-color: var(--clr-join);
+      color: var(--clr-join);
+      box-shadow: 0 0 16px rgba(0, 210, 255, 0.2);
+    }
+
+    /* ─────────────────────────────────────────────
+       COLLECTION GRID
+    ───────────────────────────────────────────── */
+    .collection-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 18px;
+      margin-bottom: 36px;
+    }
+
+    /* ─────────────────────────────────────────────
+       COLLECTION CARD
+    ───────────────────────────────────────────── */
+    .coll-card {
+      aspect-ratio: 3 / 4;
+      border-radius: 14px;
+      position: relative;
+      cursor: pointer;
+      transform-style: preserve-3d;
+      transition: transform var(--transition), box-shadow var(--transition);
+      will-change: transform;
+      overflow: hidden;
+    }
+
+    /* Rarity borders */
+    .coll-card.rarity-common  { border: 2px solid var(--rarity-common); }
+    .coll-card.rarity-rare    { border: 2px solid var(--rarity-rare);   box-shadow: 0 0 16px rgba(0,210,255,0.25); }
+    .coll-card.rarity-epic    { border: 2px solid var(--rarity-epic);   box-shadow: 0 0 16px rgba(157,80,187,0.3); }
+    .coll-card.rarity-legendary {
+      border: 2px solid var(--rarity-legendary);
+      box-shadow: 0 0 20px rgba(229,192,92,0.35);
+      animation: legendaryPulse 2.5s ease-in-out infinite;
+    }
+
+    @keyframes legendaryPulse {
+      0%,100% { box-shadow: 0 0 20px rgba(229,192,92,0.35); }
+      50%      { box-shadow: 0 0 35px rgba(229,192,92,0.65), 0 0 60px rgba(229,192,92,0.2); }
+    }
+
+    /* Card inner face */
+    .card-face {
+      width: 100%; height: 100%;
+      border-radius: 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-end;
+      padding: 12px;
+      background: linear-gradient(160deg, rgba(10,14,32,0.7) 0%, rgba(2,3,8,0.95) 100%);
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Icon / avatar area */
+    .card-icon {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -60%);
+      font-size: 3rem;
+      filter: drop-shadow(0 0 12px currentColor);
+      transition: transform var(--transition);
+      user-select: none;
+    }
+
+    .coll-card.unlocked:hover .card-icon {
+      transform: translate(-50%, -65%) scale(1.12);
+    }
+
+    /* Rarity badge */
+    .rarity-badge {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      font-size: 0.62rem;
+      letter-spacing: 1.5px;
+      padding: 3px 8px;
+      border-radius: 20px;
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .rarity-common  .rarity-badge { background: rgba(122,130,153,0.25); color: var(--rarity-common); border: 1px solid var(--rarity-common); }
+    .rarity-rare    .rarity-badge { background: rgba(0,210,255,0.15);   color: var(--rarity-rare);   border: 1px solid var(--rarity-rare); }
+    .rarity-epic    .rarity-badge { background: rgba(157,80,187,0.2);   color: var(--rarity-epic);   border: 1px solid var(--rarity-epic); }
+    .rarity-legendary .rarity-badge { background: rgba(229,192,92,0.18); color: var(--rarity-legendary); border: 1px solid var(--rarity-legendary); }
+
+    /* Type badge */
+    .type-badge {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      font-size: 0.6rem;
+      letter-spacing: 1px;
+      padding: 3px 8px;
+      border-radius: 20px;
+      font-family: 'Changa', sans-serif;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.12);
+      color: var(--clr-dim);
+    }
+
+    /* Card name */
+    .card-name {
+      font-family: 'Changa', sans-serif;
+      font-size: 0.82rem;
+      font-weight: 700;
+      text-align: center;
+      color: #e0e8ff;
+      width: 100%;
+      margin-top: auto;
+      z-index: 1;
+    }
+
+    /* Locked card overlay */
+    .locked-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(2, 3, 8, 0.82);
+      border-radius: 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      backdrop-filter: blur(3px);
+      z-index: 10;
+    }
+
+    .locked-overlay .lock-icon {
+      font-size: 2.2rem;
+      filter: grayscale(1) opacity(0.6);
+    }
+
+    .locked-overlay .question {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1.8rem;
+      color: rgba(255,255,255,0.15);
+      font-weight: 900;
+    }
+
+    /* Hover on unlocked card — 3D tilt handled by JS */
+    .coll-card.unlocked:hover {
+      z-index: 10;
+    }
+
+    /* ─────────────────────────────────────────────
+       PROGRESS BAR
+    ───────────────────────────────────────────── */
+    .progress-section {
+      background: var(--clr-panel);
+      border: 1px solid var(--clr-border);
+      border-radius: 16px;
+      padding: 24px 28px;
+      backdrop-filter: blur(10px);
+      margin-bottom: 40px;
+    }
+
+    .progress-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+
+    .progress-title {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.85rem;
+      letter-spacing: 3px;
+      color: var(--clr-dim);
+    }
+
+    .progress-pct {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1.1rem;
+      font-weight: 900;
+      color: var(--clr-gold);
+    }
+
+    .progress-track {
+      height: 10px;
+      background: rgba(255,255,255,0.06);
+      border-radius: 99px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .progress-fill {
+      height: 100%;
+      border-radius: 99px;
+      background: linear-gradient(90deg, var(--clr-purple), var(--clr-join));
+      box-shadow: 0 0 14px rgba(0,210,255,0.4);
+      transition: width 1.2s cubic-bezier(0.23, 1, 0.32, 1);
+      position: relative;
+    }
+
+    .progress-fill::after {
+      content: '';
+      position: absolute;
+      right: 0; top: 0; bottom: 0;
+      width: 30px;
+      background: linear-gradient(to right, transparent, rgba(255,255,255,0.35));
+      border-radius: 99px;
+    }
+
+    .progress-sub {
+      margin-top: 10px;
+      font-size: 0.82rem;
+      color: var(--clr-dim);
+      text-align: center;
+    }
+
+    .progress-sub .highlight {
+      color: var(--clr-join);
+      font-weight: 700;
+    }
+
+    /* celebration text */
+    .celebrate-text {
+      display: none;
+      text-align: center;
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1rem;
+      color: var(--clr-gold);
+      letter-spacing: 3px;
+      margin-top: 12px;
+      animation: celebratePulse 1s ease-in-out infinite alternate;
+    }
+
+    @keyframes celebratePulse {
+      from { text-shadow: 0 0 12px var(--clr-gold); }
+      to   { text-shadow: 0 0 30px var(--clr-gold), 0 0 60px rgba(229,192,92,0.4); }
+    }
+
+    /* ─────────────────────────────────────────────
+       MODAL
+    ───────────────────────────────────────────── */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(2,3,8,0.88);
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      backdrop-filter: blur(6px);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+
+    .modal-backdrop.open {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    .modal-box {
+      background: linear-gradient(160deg, #0d1226 0%, #060810 100%);
+      border-radius: 20px;
+      padding: 36px 32px;
+      width: min(480px, 92vw);
+      position: relative;
+      transform: scale(0.88) translateY(20px);
+      transition: transform 0.35s cubic-bezier(0.23,1,0.32,1);
+      text-align: center;
+    }
+
+    .modal-backdrop.open .modal-box {
+      transform: scale(1) translateY(0);
+    }
+
+    .modal-close {
+      position: absolute;
+      top: 16px;
+      left: 16px;
+      background: none;
+      border: 1px solid var(--clr-border);
+      border-radius: 8px;
+      width: 34px; height: 34px;
+      color: var(--clr-dim);
+      font-size: 1.1rem;
+      cursor: pointer;
+      transition: var(--transition);
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    .modal-close:hover { border-color: var(--clr-create); color: var(--clr-create); }
+
+    .modal-icon {
+      font-size: 5rem;
+      margin-bottom: 14px;
+      display: block;
+      filter: drop-shadow(0 0 18px currentColor);
+    }
+
+    .modal-rarity-badge {
+      display: inline-block;
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.7rem;
+      letter-spacing: 2px;
+      padding: 4px 14px;
+      border-radius: 20px;
+      margin-bottom: 14px;
+    }
+
+    .modal-name {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1.5rem;
+      font-weight: 900;
+      margin-bottom: 8px;
+      color: #e8eeff;
+    }
+
+    .modal-type {
+      font-size: 0.82rem;
+      color: var(--clr-dim);
+      letter-spacing: 2px;
+      margin-bottom: 16px;
+    }
+
+    .modal-desc {
+      font-size: 0.9rem;
+      color: var(--clr-text);
+      line-height: 1.7;
+      margin-bottom: 20px;
+      padding: 14px 16px;
+      background: rgba(255,255,255,0.04);
+      border-radius: 10px;
+      border: 1px solid var(--clr-border);
+    }
+
+    .modal-meta {
+      font-size: 0.78rem;
+      color: var(--clr-dim);
+      margin-bottom: 24px;
+    }
+
+    .modal-meta span { color: var(--clr-gold); font-weight: 600; }
+
+    .modal-divider {
+      height: 1px;
+      background: var(--clr-border);
+      margin: 20px 0;
+    }
+
+    .btn-set-default {
+      background: linear-gradient(135deg, var(--clr-purple), var(--clr-join));
+      border: none;
+      border-radius: 12px;
+      padding: 13px 30px;
+      color: #fff;
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.85rem;
+      letter-spacing: 2px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: var(--transition);
+      width: 100%;
+    }
+
+    .btn-set-default:hover {
+      box-shadow: 0 0 24px rgba(157,80,187,0.5);
+      transform: translateY(-2px);
+    }
+
+    .btn-set-default.is-default {
+      background: linear-gradient(135deg, var(--clr-green), #2bc47a);
+      box-shadow: 0 0 20px rgba(58,138,85,0.4);
+    }
+
+    /* ─────────────────────────────────────────────
+       EMPTY STATE
+    ───────────────────────────────────────────── */
+    .empty-state {
+      grid-column: 1 / -1;
+      text-align: center;
+      padding: 60px 0;
+      color: var(--clr-dim);
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.85rem;
+      letter-spacing: 3px;
+      display: none;
+    }
+
+    /* ─────────────────────────────────────────────
+       RESPONSIVE
+    ───────────────────────────────────────────── */
+    @media (max-width: 1024px) {
+      .collection-grid { grid-template-columns: repeat(4, 1fr); }
+    }
+    @media (max-width: 768px) {
+      .collection-grid { grid-template-columns: repeat(3, 1fr); gap: 12px; }
+      .stats-bar { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 480px) {
+      .collection-grid { grid-template-columns: repeat(2, 1fr); }
+      .stats-bar { grid-template-columns: repeat(2, 1fr); }
+      .top-title h1 { font-size: 1.3rem; letter-spacing: 3px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- CRT handled by CSS body::before / ::after -->
+
+  <div class="page-wrapper">
+
+    <!-- ══════════════════════════════════════════
+         TOP BAR
+    ══════════════════════════════════════════ -->
+    <div class="top-bar">
+      <a href="index.html" class="btn-back" id="btnBack">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="15 18 9 12 15 6"></polyline>
+        </svg>
+        رجوع
+      </a>
+
+      <div class="top-title">
+        <h1>COLLECTION</h1>
+        <div class="collection-count">
+          <span id="countUnlocked">0</span> / 24 مجموعة
+        </div>
+      </div>
+
+      <!-- spacer to center title -->
+      <div style="width:94px"></div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+         STATS BAR
+    ══════════════════════════════════════════ -->
+    <div class="stats-bar" id="statsBar">
+      <div class="stat-card">
+        <div class="stat-number" id="statTotal">0</div>
+        <div class="stat-label">إجمالي المقتنيات</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number" id="statCards">0</div>
+        <div class="stat-label">البطاقات المفتوحة</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number" id="statAvatars">0</div>
+        <div class="stat-label">الأفاتارات</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number" id="statEffects">0</div>
+        <div class="stat-label">التأثيرات</div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+         FILTER TABS
+    ══════════════════════════════════════════ -->
+    <div class="filter-tabs" id="filterTabs">
+      <button class="tab-btn active" data-filter="all">الكل</button>
+      <button class="tab-btn" data-filter="card">ظهور البطاقات</button>
+      <button class="tab-btn" data-filter="avatar">الأفاتارات</button>
+      <button class="tab-btn" data-filter="effect">تأثيرات</button>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+         COLLECTION GRID
+    ══════════════════════════════════════════ -->
+    <div class="collection-grid" id="collectionGrid">
+      <!-- generated by JS -->
+      <div class="empty-state" id="emptyState">لا توجد عناصر في هذه الفئة</div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+         PROGRESS BAR
+    ══════════════════════════════════════════ -->
+    <div class="progress-section">
+      <div class="progress-header">
+        <div class="progress-title">تقدم المجموعة</div>
+        <div class="progress-pct" id="progressPct">0%</div>
+      </div>
+      <div class="progress-track">
+        <div class="progress-fill" id="progressFill" style="width:0%"></div>
+      </div>
+      <div class="progress-sub">
+        لديك <span class="highlight" id="progressOwned">0</span> من أصل <span class="highlight">24</span> عنصر مكتمل
+      </div>
+      <div class="celebrate-text" id="celebrateText">🏆 أسطوري! لقد أكملت المجموعة بالكامل! 🏆</div>
+    </div>
+
+  </div><!-- /page-wrapper -->
+
+  <!-- ══════════════════════════════════════════
+       MODAL
+  ══════════════════════════════════════════ -->
+  <div class="modal-backdrop" id="modalBackdrop">
+    <div class="modal-box" id="modalBox">
+      <button class="modal-close" id="modalClose">✕</button>
+      <span class="modal-icon" id="modalIcon">🃏</span>
+      <div class="modal-rarity-badge" id="modalRarityBadge"></div>
+      <div class="modal-name" id="modalName"></div>
+      <div class="modal-type" id="modalType"></div>
+      <div class="modal-desc" id="modalDesc"></div>
+      <div class="modal-meta">تاريخ الحصول: <span id="modalDate"></span></div>
+      <div class="modal-divider"></div>
+      <button class="btn-set-default" id="btnSetDefault">تعيين كافتراضي</button>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       JAVASCRIPT
+  ══════════════════════════════════════════ -->
+  <script>
+  /* ─────────────────────────────────────────────────────
+     DATA — 24 items definition
+  ───────────────────────────────────────────────────── */
+  const ITEMS = [
+    // ── CARDS (ظهور البطاقات) ──────────────────────────
+    {
+      id: 'card_detective', type: 'card', rarity: 'legendary',
+      name: 'المحقق الأسطوري', icon: '🕵️',
+      desc: 'تظهر بطاقتك مع هالة من الضوء الذهبي. تكشف هويتك ببراعة لا مثيل لها.',
+      unlocked: true
+    },
+    {
+      id: 'card_shadow', type: 'card', rarity: 'epic',
+      name: 'ظل المافيا', icon: '🦹',
+      desc: 'بطاقة ظهور داكنة مع تأثير الدخان الأرجواني عند الكشف.',
+      unlocked: true
+    },
+    {
+      id: 'card_classic', type: 'card', rarity: 'common',
+      name: 'الكلاسيكية', icon: '🃏',
+      desc: 'بطاقة ظهور كلاسيكية نظيفة. الأساسيات دائماً تعمل.',
+      unlocked: true
+    },
+    {
+      id: 'card_neon', type: 'card', rarity: 'rare',
+      name: 'النيون', icon: '💠',
+      desc: 'بطاقة ظهور نيونية مع إضاءة زرقاء نابضة.',
+      unlocked: true
+    },
+    {
+      id: 'card_flame', type: 'card', rarity: 'epic',
+      name: 'اللهب الأرجواني', icon: '🔮',
+      desc: 'بطاقتك مغلفة بلهب سحري يكشف دورك بشكل درامي.',
+      unlocked: false
+    },
+    {
+      id: 'card_ghost', type: 'card', rarity: 'rare',
+      name: 'الشبح', icon: '👻',
+      desc: 'بطاقة شبحية شفافة تظهر وتختفي بشكل مخيف.',
+      unlocked: true
+    },
+    {
+      id: 'card_royal', type: 'card', rarity: 'legendary',
+      name: 'التاج الملكي', icon: '👑',
+      desc: 'بطاقة ملكية مع تاج ذهبي يشير إلى قيادتك المطلقة.',
+      unlocked: false
+    },
+    {
+      id: 'card_cyber', type: 'card', rarity: 'rare',
+      name: 'الإلكتروني', icon: '⚡',
+      desc: 'بطاقة ذات طابع إلكتروني مستقبلي مع رعود رقمية.',
+      unlocked: false
+    },
+
+    // ── AVATARS (الأفاتارات) ───────────────────────────
+    {
+      id: 'avatar_boss', type: 'avatar', rarity: 'legendary',
+      name: 'رئيس المافيا', icon: '😈',
+      desc: 'أفاتار رئيس المافيا الأسطوري. كل من يراه يعرف من أنت.',
+      unlocked: true
+    },
+    {
+      id: 'avatar_doc', type: 'avatar', rarity: 'epic',
+      name: 'الطبيب الغامض', icon: '🧑‍⚕️',
+      desc: 'أفاتار الطبيب الذي يعالج ويخفي في نفس الوقت.',
+      unlocked: true
+    },
+    {
+      id: 'avatar_sheriff', type: 'avatar', rarity: 'rare',
+      name: 'المحقق الرئيسي', icon: '👮',
+      desc: 'أفاتار المحقق الذي لا يغفل عن أي تفصيلة.',
+      unlocked: true
+    },
+    {
+      id: 'avatar_villager', type: 'avatar', rarity: 'common',
+      name: 'المواطن البسيط', icon: '🧑',
+      desc: 'أفاتار المواطن الشريف الذي يثق بالجميع.',
+      unlocked: true
+    },
+    {
+      id: 'avatar_witch', type: 'avatar', rarity: 'epic',
+      name: 'الساحرة المظلمة', icon: '🧙‍♀️',
+      desc: 'أفاتار الساحرة التي تمتلك قدرات خفية.',
+      unlocked: false
+    },
+    {
+      id: 'avatar_sniper', type: 'avatar', rarity: 'rare',
+      name: 'القناص الصامت', icon: '🎯',
+      desc: 'أفاتار القناص الذي لا يخطئ هدفه أبداً.',
+      unlocked: false
+    },
+    {
+      id: 'avatar_hacker', type: 'avatar', rarity: 'legendary',
+      name: 'القرصان الرقمي', icon: '🤖',
+      desc: 'أفاتار أسطوري للقرصان الذي يخترق كل الدفاعات.',
+      unlocked: false
+    },
+    {
+      id: 'avatar_joker', type: 'avatar', rarity: 'common',
+      name: 'المهرج الضاحك', icon: '🤡',
+      desc: 'أفاتار المهرج الذي يخفي نواياه خلف ابتسامة.',
+      unlocked: true
+    },
+
+    // ── EFFECTS (تأثيرات) ─────────────────────────────
+    {
+      id: 'effect_fire', type: 'effect', rarity: 'legendary',
+      name: 'النار الأبدية', icon: '🔥',
+      desc: 'تأثير اللهب الأبدي — يحيط نافذتك بنيران متحركة طوال الجلسة.',
+      unlocked: true
+    },
+    {
+      id: 'effect_ice', type: 'effect', rarity: 'epic',
+      name: 'الجليد الأزرق', icon: '❄️',
+      desc: 'تأثير الجليد الأزرق — تتساقط بلورات ثلجية حول بطاقتك.',
+      unlocked: true
+    },
+    {
+      id: 'effect_thunder', type: 'effect', rarity: 'rare',
+      name: 'البرق المزدوج', icon: '⚡',
+      desc: 'تأثير البرق — وميض مزدوج عند تصويتك.',
+      unlocked: false
+    },
+    {
+      id: 'effect_stars', type: 'effect', rarity: 'common',
+      name: 'نجوم الليل', icon: '✨',
+      desc: 'تأثير بسيط من النجوم المتلألئة حول اسمك.',
+      unlocked: true
+    },
+    {
+      id: 'effect_void', type: 'effect', rarity: 'legendary',
+      name: 'الفراغ المطلق', icon: '🌀',
+      desc: 'تأثير الفراغ الأسطوري — يبتلع الضوء حول شخصيتك.',
+      unlocked: false
+    },
+    {
+      id: 'effect_rainbow', type: 'effect', rarity: 'epic',
+      name: 'قوس قزح', icon: '🌈',
+      desc: 'تأثير قوس القزح المتدفق — ألوان تتموج باستمرار.',
+      unlocked: false
+    },
+    {
+      id: 'effect_skull', type: 'effect', rarity: 'rare',
+      name: 'عالم الأشباح', icon: '💀',
+      desc: 'تأثير الجماجم الطائفة حول دورك في كل ليلة.',
+      unlocked: false
+    },
+    {
+      id: 'effect_bloom', type: 'effect', rarity: 'common',
+      name: 'إزهار البياض', icon: '🌸',
+      desc: 'تأثير ناعم من بتلات الأزهار البيضاء المتساقطة.',
+      unlocked: true
+    },
+  ];
+
+  /* ─────────────────────────────────────────────────────
+     HELPERS
+  ───────────────────────────────────────────────────── */
+  const RARITY_LABEL = {
+    common:    'شائع',
+    rare:      'نادر',
+    epic:      'ملحمي',
+    legendary: 'أسطوري',
+  };
+
+  const TYPE_LABEL = {
+    card:   'ظهور البطاقة',
+    avatar: 'أفاتار',
+    effect: 'تأثير',
+  };
+
+  function getLS() {
+    try {
+      const raw = localStorage.getItem('mafia_collection');
+      return raw ? JSON.parse(raw) : {};
+    } catch(e) { return {}; }
+  }
+
+  function saveLS(data) {
+    try { localStorage.setItem('mafia_collection', JSON.stringify(data)); } catch(e) {}
+  }
+
+  function getDefaultItem() {
+    try { return localStorage.getItem('mafia_default_item') || ''; } catch(e) { return ''; }
+  }
+
+  function setDefaultItem(id) {
+    try { localStorage.setItem('mafia_default_item', id); } catch(e) {}
+  }
+
+  /* merge saved unlock state */
+  function buildItems() {
+    const saved = getLS();
+    return ITEMS.map(item => ({
+      ...item,
+      unlocked: saved[item.id] !== undefined ? saved[item.id] : item.unlocked,
+    }));
+  }
+
+  /* ─────────────────────────────────────────────────────
+     STATE
+  ───────────────────────────────────────────────────── */
+  let allItems   = buildItems();
+  let activeFilter = 'all';
+  let openItemId   = null;
+
+  /* ─────────────────────────────────────────────────────
+     RENDER STATS
+  ───────────────────────────────────────────────────── */
+  function renderStats() {
+    const total   = allItems.filter(i => i.unlocked).length;
+    const cards   = allItems.filter(i => i.unlocked && i.type === 'card').length;
+    const avatars = allItems.filter(i => i.unlocked && i.type === 'avatar').length;
+    const effects = allItems.filter(i => i.unlocked && i.type === 'effect').length;
+
+    document.getElementById('statTotal').textContent   = total;
+    document.getElementById('statCards').textContent   = cards;
+    document.getElementById('statAvatars').textContent = avatars;
+    document.getElementById('statEffects').textContent = effects;
+    document.getElementById('countUnlocked').textContent = total;
+  }
+
+  /* ─────────────────────────────────────────────────────
+     RENDER PROGRESS
+  ───────────────────────────────────────────────────── */
+  function renderProgress() {
+    const total    = allItems.length;
+    const unlocked = allItems.filter(i => i.unlocked).length;
+    const pct      = Math.round((unlocked / total) * 100);
+
+    document.getElementById('progressPct').textContent   = pct + '%';
+    document.getElementById('progressOwned').textContent = unlocked;
+
+    setTimeout(() => {
+      document.getElementById('progressFill').style.width = pct + '%';
+    }, 200);
+
+    if (pct >= 100) {
+      document.getElementById('celebrateText').style.display = 'block';
+    }
+  }
+
+  /* ─────────────────────────────────────────────────────
+     CREATE CARD ELEMENT
+  ───────────────────────────────────────────────────── */
+  function createCardEl(item) {
+    const card = document.createElement('div');
+    card.className = `coll-card rarity-${item.rarity} ${item.unlocked ? 'unlocked' : 'locked'}`;
+    card.dataset.id   = item.id;
+    card.dataset.type = item.type;
+
+    const rarityEl = `<div class="rarity-badge">${RARITY_LABEL[item.rarity]}</div>`;
+    const typeEl   = `<div class="type-badge">${TYPE_LABEL[item.type]}</div>`;
+    const iconEl   = `<div class="card-icon">${item.icon}</div>`;
+    const nameEl   = `<div class="card-name">${item.name}</div>`;
+
+    if (item.unlocked) {
+      card.innerHTML = `
+        <div class="card-face">
+          ${rarityEl}
+          ${typeEl}
+          ${iconEl}
+          ${nameEl}
+        </div>`;
+    } else {
+      card.innerHTML = `
+        <div class="card-face">
+          ${rarityEl}
+          ${typeEl}
+          ${iconEl}
+          ${nameEl}
+          <div class="locked-overlay">
+            <span class="lock-icon">🔒</span>
+            <span class="question">?</span>
+          </div>
+        </div>`;
+    }
+
+    return card;
+  }
+
+  /* ─────────────────────────────────────────────────────
+     RENDER GRID
+  ───────────────────────────────────────────────────── */
+  function renderGrid(filter, animate = true) {
+    const grid  = document.getElementById('collectionGrid');
+    const empty = document.getElementById('emptyState');
+
+    /* filter items */
+    const filtered = allItems.filter(item =>
+      filter === 'all' || item.type === filter
+    );
+
+    /* get existing cards */
+    const existing = [...grid.querySelectorAll('.coll-card')];
+
+    if (animate && existing.length > 0) {
+      gsap.to(existing, {
+        opacity: 0, scale: 0.88, y: 12,
+        duration: 0.25,
+        stagger: 0.02,
+        onComplete: () => {
+          existing.forEach(el => el.remove());
+          insertCards(grid, filtered, empty, animate);
+        }
+      });
+    } else {
+      existing.forEach(el => el.remove());
+      insertCards(grid, filtered, empty, animate);
+    }
+  }
+
+  function insertCards(grid, items, empty, animate) {
+    if (items.length === 0) {
+      empty.style.display = 'block';
+      return;
+    }
+    empty.style.display = 'none';
+
+    const fragment = document.createDocumentFragment();
+    items.forEach(item => {
+      const el = createCardEl(item);
+      fragment.appendChild(el);
+    });
+    grid.appendChild(fragment);
+
+    /* bind events */
+    bindCardEvents();
+
+    /* GSAP entrance */
+    if (animate) {
+      gsap.fromTo(
+        grid.querySelectorAll('.coll-card'),
+        { opacity: 0, y: 30, scale: 0.88 },
+        {
+          opacity: 1, y: 0, scale: 1,
+          duration: 0.5,
+          stagger: 0.055,
+          ease: 'power3.out',
+          clearProps: 'transform'
+        }
+      );
+    } else {
+      grid.querySelectorAll('.coll-card').forEach(el => {
+        el.style.opacity = '1';
+      });
+    }
+  }
+
+  /* ─────────────────────────────────────────────────────
+     CARD EVENTS (hover 3D + locked shake + click modal)
+  ───────────────────────────────────────────────────── */
+  function bindCardEvents() {
+    document.querySelectorAll('.coll-card.unlocked').forEach(card => {
+      card.addEventListener('mousemove', onCardHover);
+      card.addEventListener('mouseleave', onCardLeave);
+      card.addEventListener('click', () => openModal(card.dataset.id));
+    });
+
+    document.querySelectorAll('.coll-card.locked').forEach(card => {
+      card.addEventListener('mouseenter', () => {
+        gsap.to(card, {
+          keyframes: [
+            { x: -4, duration: 0.07 },
+            { x: 4,  duration: 0.07 },
+            { x: -3, duration: 0.06 },
+            { x: 3,  duration: 0.06 },
+            { x: 0,  duration: 0.06 },
+          ]
+        });
+      });
+    });
+  }
+
+  function onCardHover(e) {
+    const card  = e.currentTarget;
+    const rect  = card.getBoundingClientRect();
+    const cx    = rect.left + rect.width  / 2;
+    const cy    = rect.top  + rect.height / 2;
+    const dx    = (e.clientX - cx) / (rect.width  / 2);
+    const dy    = (e.clientY - cy) / (rect.height / 2);
+    const rotX  = -dy * 10;
+    const rotY  =  dx * 10;
+
+    gsap.to(card, {
+      rotateX: rotX, rotateY: rotY,
+      translateY: -8, scale: 1.05,
+      duration: 0.3, ease: 'power2.out',
+      transformPerspective: 600
+    });
+  }
+
+  function onCardLeave(e) {
+    gsap.to(e.currentTarget, {
+      rotateX: 0, rotateY: 0,
+      translateY: 0, scale: 1,
+      duration: 0.5, ease: 'elastic.out(1, 0.6)',
+      clearProps: 'rotateX,rotateY'
+    });
+  }
+
+  /* ─────────────────────────────────────────────────────
+     MODAL
+  ───────────────────────────────────────────────────── */
+  function openModal(id) {
+    const item = allItems.find(i => i.id === id);
+    if (!item || !item.unlocked) return;
+    openItemId = id;
+
+    /* populate */
+    document.getElementById('modalIcon').textContent = item.icon;
+    document.getElementById('modalName').textContent = item.name;
+    document.getElementById('modalType').textContent = TYPE_LABEL[item.type];
+    document.getElementById('modalDesc').textContent = item.desc;
+
+    /* date */
+    const saved = getLS();
+    const date  = saved[id + '_date'] || new Date().toLocaleDateString('ar-SA');
+    document.getElementById('modalDate').textContent = date;
+
+    /* save date if missing */
+    if (!saved[id + '_date']) {
+      saved[id + '_date'] = date;
+      saveLS(saved);
+    }
+
+    /* rarity badge */
+    const badge = document.getElementById('modalRarityBadge');
+    badge.textContent = RARITY_LABEL[item.rarity];
+    badge.className = 'modal-rarity-badge';
+    const colors = {
+      common:    { bg:'rgba(122,130,153,0.2)', clr:  '#7a8299', border: '#7a8299' },
+      rare:      { bg:'rgba(0,210,255,0.15)',  clr:  '#00d2ff', border: '#00d2ff' },
+      epic:      { bg:'rgba(157,80,187,0.2)',  clr:  '#9d50bb', border: '#9d50bb' },
+      legendary: { bg:'rgba(229,192,92,0.18)', clr:  '#e5c05c', border: '#e5c05c' },
+    };
+    const c = colors[item.rarity];
+    badge.style.cssText = `background:${c.bg};color:${c.clr};border:1px solid ${c.border};`;
+
+    /* default button */
+    const defBtn = document.getElementById('btnSetDefault');
+    const currentDefault = getDefaultItem();
+    if (currentDefault === id) {
+      defBtn.textContent = '✓ محدد كافتراضي';
+      defBtn.classList.add('is-default');
+    } else {
+      defBtn.textContent = 'تعيين كافتراضي';
+      defBtn.classList.remove('is-default');
+    }
+
+    /* show backdrop */
+    document.getElementById('modalBackdrop').classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeModal() {
+    document.getElementById('modalBackdrop').classList.remove('open');
+    document.body.style.overflow = '';
+    openItemId = null;
+  }
+
+  document.getElementById('modalClose').addEventListener('click', closeModal);
+
+  document.getElementById('modalBackdrop').addEventListener('click', e => {
+    if (e.target === document.getElementById('modalBackdrop')) closeModal();
+  });
+
+  document.getElementById('btnSetDefault').addEventListener('click', () => {
+    if (!openItemId) return;
+    setDefaultItem(openItemId);
+    const btn = document.getElementById('btnSetDefault');
+    btn.textContent = '✓ محدد كافتراضي';
+    btn.classList.add('is-default');
+
+    gsap.fromTo(btn,
+      { scale: 0.95 },
+      { scale: 1, duration: 0.5, ease: 'elastic.out(1.2, 0.5)' }
+    );
+  });
+
+  /* ─────────────────────────────────────────────────────
+     FILTER TABS
+  ───────────────────────────────────────────────────── */
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      activeFilter = btn.dataset.filter;
+      renderGrid(activeFilter, true);
+    });
+  });
+
+  /* ─────────────────────────────────────────────────────
+     BACK BUTTON ANIMATION
+  ───────────────────────────────────────────────────── */
+  document.getElementById('btnBack').addEventListener('click', e => {
+    /* gentle fade out before navigating */
+    e.preventDefault();
+    const href = e.currentTarget.getAttribute('href');
+    gsap.to('.page-wrapper', {
+      opacity: 0, y: -10, duration: 0.3,
+      onComplete: () => { window.location.href = href; }
+    });
+  });
+
+  /* ─────────────────────────────────────────────────────
+     ENTRANCE ANIMATIONS (top bar, stats, tabs, progress)
+  ───────────────────────────────────────────────────── */
+  function runEntrance() {
+    const tl = gsap.timeline({ defaults: { ease: 'power3.out' } });
+
+    tl.fromTo('.top-bar',
+      { opacity: 0, y: -20 },
+      { opacity: 1, y: 0, duration: 0.5 }
+    )
+    .fromTo('.stat-card',
+      { opacity: 0, y: 20 },
+      { opacity: 1, y: 0, duration: 0.45, stagger: 0.08 },
+      '-=0.2'
+    )
+    .fromTo('.filter-tabs',
+      { opacity: 0, y: 14 },
+      { opacity: 1, y: 0, duration: 0.4 },
+      '-=0.2'
+    )
+    .fromTo('.progress-section',
+      { opacity: 0, y: 16 },
+      { opacity: 1, y: 0, duration: 0.4 },
+      '-=0.1'
+    );
+  }
+
+  /* ─────────────────────────────────────────────────────
+     INIT
+  ───────────────────────────────────────────────────── */
+  function init() {
+    /* hide everything first for entrance anim */
+    gsap.set(['.top-bar', '.stat-card', '.filter-tabs', '.progress-section'],
+      { opacity: 0 });
+
+    renderStats();
+    renderProgress();
+    renderGrid('all', false);   /* grid has its own entrance */
+
+    /* slight delay then run entrance */
+    requestAnimationFrame(() => {
+      runEntrance();
+      /* grid entrance after bar */
+      setTimeout(() => {
+        gsap.fromTo(
+          '#collectionGrid .coll-card',
+          { opacity: 0, y: 30, scale: 0.88 },
+          {
+            opacity: 1, y: 0, scale: 1,
+            duration: 0.5,
+            stagger: 0.055,
+            ease: 'power3.out',
+            clearProps: 'transform'
+          }
+        );
+      }, 400);
+    });
+  }
+
+  init();
+  </script>
+</body>
+</html>

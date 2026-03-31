@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, orientation=landscape">
+    <title>MAFIA | Arcade Ultimate</title>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Changa:wght@400;600;800&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --bg-deep: #020308;
+            --clr-create: #ff0055;
+            --clr-join: #00d2ff;
+            --clr-deck: #9d50bb;
+            --clr-store: #00ffa6;
+            --clr-rules: #ffc107;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; }
+
+        body {
+            background-color: var(--bg-deep);
+            background: radial-gradient(circle at center, #0a0e20 0%, var(--bg-deep) 100%);
+            color: #fff;
+            font-family: 'Changa', sans-serif;
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* تأثير شاشة الأركيد */
+        #crt-overlay {
+            position: fixed; inset: 0; z-index: 10000; pointer-events: none;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%);
+            background-size: 100% 4px;
+            box-shadow: inset 0 0 200px rgba(0,0,0,0.9);
+        }
+
+        /* الخلفية (البطاقات العائمة) */
+        #cards-bg {
+            position: fixed; inset: 0; z-index: 1;
+            perspective: 1000px; pointer-events: none;
+        }
+
+        .floating-card {
+            position: absolute; width: 100px; height: 140px;
+            background-size: cover; border-radius: 10px;
+            opacity: 0.1; border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        /* الطبقة الرئيسية للواجهة */
+        #ui-container {
+            position: relative; z-index: 5000;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            gap: 40px; width: 100%; height: 100%;
+            perspective: 1200px;
+        }
+
+        .logo-box {
+            text-align: center;
+            transform-style: preserve-3d;
+            margin-bottom: 20px;
+        }
+
+        .main-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: clamp(3rem, 9vw, 6rem);
+            font-weight: 900; letter-spacing: 12px;
+            color: #fff; line-height: 1;
+            text-shadow: 0 0 30px rgba(255,255,255,0.2), 5px 5px 0 var(--clr-create), -5px -5px 0 var(--clr-join);
+        }
+
+        .sub-title {
+            font-size: 1.4rem; font-weight: 800; color: var(--clr-rules);
+            letter-spacing: 6px; margin-top: 10px; text-transform: uppercase;
+        }
+
+        /* شبكة الأزرار الأفقية */
+        .btn-row {
+            display: flex; flex-wrap: wrap;
+            justify-content: center; align-items: center;
+            gap: 20px; width: 95%; max-width: 1200px;
+        }
+
+        /* تصميم زر الأركيد "الجبار" */
+        .arcade-btn {
+            min-width: 190px; height: 75px;
+            background: #11141d;
+            border: 3px solid rgba(255,255,255,0.1);
+            border-radius: 16px;
+            cursor: pointer;
+            position: relative;
+            display: flex; align-items: center; justify-content: center;
+            gap: 12px;
+            box-shadow: 0 10px 0 #000, 0 15px 35px rgba(0,0,0,0.8);
+            transition: all 0.2s ease;
+            overflow: hidden;
+        }
+
+        .arcade-btn span {
+            color: #fff; font-size: 1.2rem; font-weight: 900;
+            z-index: 5; text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
+
+        .btn-icon { font-size: 1.7rem; z-index: 5; }
+
+        /* تأثيرات الإضاءة لكل زر */
+        .btn-create { border-color: var(--clr-create); box-shadow: 0 10px 0 #600, 0 0 20px rgba(255,0,85,0.2); }
+        .btn-join   { border-color: var(--clr-join);   box-shadow: 0 10px 0 #005, 0 0 20px rgba(0,210,255,0.2); }
+        .btn-deck   { border-color: var(--clr-deck);   box-shadow: 0 10px 0 #404, 0 0 20px rgba(157,80,187,0.2); }
+        .btn-store  { border-color: var(--clr-store);  box-shadow: 0 10px 0 #050, 0 0 20px rgba(0,255,166,0.2); }
+        .btn-rules  { border-color: var(--clr-rules);  box-shadow: 0 10px 0 #650, 0 0 20px rgba(255,193,7,0.2); }
+
+        /* التوهج عند التمرير (Hover) */
+        .arcade-btn:hover {
+            transform: translateY(-8px);
+            border-color: #fff;
+            background: #1a1e2b;
+        }
+        .btn-create:hover { box-shadow: 0 15px 0 #600, 0 0 40px var(--clr-create); }
+        .btn-join:hover   { box-shadow: 0 15px 0 #005, 0 0 40px var(--clr-join); }
+        .btn-deck:hover   { box-shadow: 0 15px 0 #404, 0 0 40px var(--clr-deck); }
+        .btn-store:hover  { box-shadow: 0 15px 0 #050, 0 0 40px var(--clr-store); }
+        .btn-rules:hover  { box-shadow: 0 15px 0 #650, 0 0 40px var(--clr-rules); }
+
+        /* تأثير الانكباس عند الضغط */
+        .arcade-btn:active {
+            transform: translateY(10px);
+            box-shadow: 0 0 0 transparent !important;
+        }
+
+        /* =========================================
+           PROFILE HUD (شريط أعلى الشاشة)
+           ========================================= */
+        #profile-hud {
+            position: fixed; top: 0; left: 0; right: 0; z-index: 6000;
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 14px 24px;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.85) 0%, transparent 100%);
+        }
+
+        .profile-box {
+            display: flex; align-items: center; gap: 14px;
+        }
+        .avatar {
+            width: 52px; height: 52px; border-radius: 50%;
+            background: linear-gradient(135deg, #ff0055 0%, #00d2ff 100%);
+            border: 3px solid rgba(255,255,255,0.25);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.6rem;
+            box-shadow: 0 0 20px rgba(255,0,85,0.4);
+            cursor: pointer; transition: 0.2s;
+        }
+        .avatar:hover { transform: scale(1.1); box-shadow: 0 0 30px rgba(255,0,85,0.7); }
+        .profile-info { line-height: 1.3; }
+        .profile-name { font-size: 1.05rem; font-weight: 800; }
+        .profile-meta { font-size: 0.78rem; color: var(--clr-rules); font-weight: 600; letter-spacing: 1px; }
+        .profile-wins { color: #fff; font-weight: 900; }
+
+        .hud-right { display: flex; align-items: center; gap: 14px; }
+
+        .currency-box {
+            display: flex; align-items: center; gap: 10px;
+            background: rgba(0,0,0,0.65); padding: 8px 22px;
+            border: 2px solid rgba(0,255,166,0.4); border-radius: 30px;
+            cursor: pointer; transition: 0.2s;
+        }
+        .currency-box:hover { border-color: var(--clr-store); box-shadow: 0 0 15px rgba(0,255,166,0.3); }
+        .currency-gem { font-size: 1.3rem; }
+        .currency-amount {
+            font-family: 'Orbitron'; font-size: 1.1rem; font-weight: 900; color: var(--clr-store);
+        }
+
+        .settings-btn {
+            width: 48px; height: 48px; border-radius: 50%;
+            background: rgba(0,0,0,0.65); border: 2px solid rgba(255,255,255,0.2);
+            color: #fff; font-size: 1.3rem; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            transition: 0.3s;
+        }
+        .settings-btn:hover { border-color: #fff; transform: rotate(60deg); }
+
+        /* =========================================
+           SETTINGS MODAL
+           ========================================= */
+        #settings-modal {
+            position: fixed; inset: 0; z-index: 9000;
+            background: rgba(0,0,0,0.75); backdrop-filter: blur(12px);
+            display: none; align-items: center; justify-content: center;
+        }
+        #settings-modal.open { display: flex; }
+
+        .settings-panel {
+            background: #080d18; border: 3px solid rgba(255,255,255,0.1);
+            border-radius: 20px; padding: 40px; min-width: 380px;
+            box-shadow: 0 40px 80px rgba(0,0,0,0.95);
+            animation: panelIn 0.3s ease;
+        }
+        @keyframes panelIn {
+            from { transform: scale(0.85) translateY(30px); opacity: 0; }
+            to   { transform: scale(1) translateY(0); opacity: 1; }
+        }
+        .settings-title {
+            font-family: 'Orbitron'; font-size: 1.4rem; text-align: center;
+            color: var(--clr-rules); margin-bottom: 30px; letter-spacing: 3px;
+        }
+        .settings-divider {
+            font-size: 0.75rem; color: #475569; letter-spacing: 3px; text-transform: uppercase;
+            margin: 20px 0 12px; text-align: center;
+        }
+        .settings-row {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 13px 0; border-bottom: 1px solid rgba(255,255,255,0.07);
+        }
+        .settings-row:last-of-type { border-bottom: none; }
+        .settings-row label { font-size: 0.95rem; font-weight: 700; color: #cbd5e1; }
+
+        /* Toggle Switch */
+        .toggle { position: relative; width: 54px; height: 28px; }
+        .toggle input { opacity: 0; width: 0; height: 0; }
+        .toggle-slider {
+            position: absolute; inset: 0; border-radius: 28px;
+            background: #1e293b; cursor: pointer; transition: 0.3s;
+            border: 2px solid #334155;
+        }
+        .toggle-slider::before {
+            content: ''; position: absolute; width: 18px; height: 18px;
+            left: 3px; top: 3px; border-radius: 50%; background: #64748b;
+            transition: 0.3s;
+        }
+        .toggle input:checked + .toggle-slider { background: var(--clr-create); border-color: var(--clr-create); }
+        .toggle input:checked + .toggle-slider::before { transform: translateX(26px); background: #fff; }
+
+        .settings-close {
+            width: 100%; margin-top: 28px; padding: 13px;
+            background: transparent; color: var(--clr-rules);
+            font-family: 'Changa'; font-size: 1.1rem; font-weight: 900;
+            border: 2px solid var(--clr-rules); border-radius: 12px; cursor: pointer;
+            transition: 0.2s;
+        }
+        .settings-close:hover { background: var(--clr-rules); color: #000; }
+
+        /* ── AUTH MODAL ── */
+        #auth-modal {
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,0.85);
+            backdrop-filter: blur(10px);
+            z-index: 9000;
+            display: flex; align-items: center; justify-content: center;
+        }
+        #auth-modal.hidden { display: none; }
+        .auth-panel {
+            background: #0a0d1a;
+            border: 1px solid #1e2a4a;
+            border-radius: 20px;
+            padding: 40px 36px;
+            width: 400px; max-width: 95vw;
+            position: relative;
+        }
+        .auth-logo {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 28px; font-weight: 900;
+            color: #f0c040;
+            text-align: center;
+            text-shadow: 0 0 30px rgba(240,192,64,0.6);
+            margin-bottom: 6px;
+        }
+        .auth-sub { text-align: center; color: #5a6a8a; font-size: 13px; margin-bottom: 28px; }
+        .auth-tabs { display: flex; gap: 0; margin-bottom: 24px; border-radius: 10px; overflow: hidden; border: 1px solid #1e2a4a; }
+        .auth-tab {
+            flex: 1; padding: 10px; text-align: center;
+            cursor: pointer; font-family: 'Changa', sans-serif;
+            font-size: 14px; font-weight: 700; color: #5a6a8a;
+            background: transparent; border: none;
+            transition: all 0.2s;
+        }
+        .auth-tab.active { background: #1e2a4a; color: #00d4ff; }
+        .auth-input {
+            width: 100%; padding: 12px 16px;
+            background: #060a15; border: 1px solid #1e2a4a;
+            border-radius: 10px; color: #c8d8f0;
+            font-family: 'Changa', sans-serif; font-size: 14px;
+            margin-bottom: 12px; outline: none;
+            transition: border-color 0.2s;
+        }
+        .auth-input:focus { border-color: #00d4ff; }
+        .auth-input::placeholder { color: #3a4a6a; }
+        .avatar-row { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; justify-content: center; }
+        .avatar-opt {
+            font-size: 24px; width: 44px; height: 44px;
+            border-radius: 50%; border: 2px solid #1e2a4a;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; transition: all 0.2s; background: #060a15;
+        }
+        .avatar-opt.selected { border-color: #00d4ff; box-shadow: 0 0 12px rgba(0,212,255,0.4); background: #0d1f3a; }
+        .auth-btn {
+            width: 100%; padding: 14px;
+            background: linear-gradient(135deg, #ff0055, #d93838);
+            border: none; border-radius: 10px;
+            color: #fff; font-family: 'Orbitron', sans-serif;
+            font-size: 14px; font-weight: 700; cursor: pointer;
+            margin-top: 4px; letter-spacing: 1px;
+            transition: all 0.2s;
+        }
+        .auth-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(255,0,85,0.4); }
+        .auth-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+        .auth-error {
+            color: #e03050; font-size: 12px;
+            text-align: center; margin-top: 10px;
+            min-height: 18px;
+        }
+        .auth-divider { height: 1px; background: #1e2a4a; margin: 16px 0; }
+
+        /* ── SIGNOUT BTN ── */
+        .signout-btn {
+            background: transparent; border: 1px solid #1e2a4a;
+            color: #5a6a8a; font-size: 11px; padding: 4px 10px;
+            border-radius: 6px; cursor: pointer; font-family: 'Changa';
+            margin-top: 4px; transition: all 0.2s;
+        }
+        .signout-btn:hover { border-color: #e03050; color: #e03050; }
+
+    </style>
+</head>
+<body>
+
+    <div id="crt-overlay"></div>
+    <div id="cards-bg"></div>
+
+    <!-- AUTH MODAL -->
+    <div id="auth-modal">
+        <div class="auth-panel">
+            <div class="auth-logo">MAFIA</div>
+            <div class="auth-sub">صراع العقول والبطاقات</div>
+            <div class="auth-tabs">
+                <button class="auth-tab active" onclick="switchTab('login')">تسجيل الدخول</button>
+                <button class="auth-tab" onclick="switchTab('register')">حساب جديد</button>
+            </div>
+
+            <!-- Login Form -->
+            <div id="form-login">
+                <input class="auth-input" type="email" id="login-email" placeholder="البريد الإلكتروني" autocomplete="email">
+                <input class="auth-input" type="password" id="login-pass" placeholder="كلمة المرور" autocomplete="current-password">
+                <button class="auth-btn" id="login-btn" onclick="doLogin()">دخول ◀</button>
+            </div>
+
+            <!-- Register Form -->
+            <div id="form-register" style="display:none">
+                <input class="auth-input" type="text" id="reg-username" placeholder="اسم اللاعب (مرئي للجميع)" maxlength="20">
+                <input class="auth-input" type="email" id="reg-email" placeholder="البريد الإلكتروني">
+                <input class="auth-input" type="password" id="reg-pass" placeholder="كلمة المرور (6 أحرف+)">
+                <div style="font-size:12px;color:#5a6a8a;margin-bottom:8px;text-align:center">اختر أفاتار</div>
+                <div class="avatar-row" id="avatar-row">
+                    <div class="avatar-opt selected" data-av="🦁" onclick="selectAvatar(this)">🦁</div>
+                    <div class="avatar-opt" data-av="🐺" onclick="selectAvatar(this)">🐺</div>
+                    <div class="avatar-opt" data-av="🦊" onclick="selectAvatar(this)">🦊</div>
+                    <div class="avatar-opt" data-av="🐯" onclick="selectAvatar(this)">🐯</div>
+                    <div class="avatar-opt" data-av="🦅" onclick="selectAvatar(this)">🦅</div>
+                    <div class="avatar-opt" data-av="🐉" onclick="selectAvatar(this)">🐉</div>
+                    <div class="avatar-opt" data-av="👑" onclick="selectAvatar(this)">👑</div>
+                    <div class="avatar-opt" data-av="💀" onclick="selectAvatar(this)">💀</div>
+                </div>
+                <button class="auth-btn" id="reg-btn" onclick="doRegister()">إنشاء حساب ◀</button>
+            </div>
+
+            <div class="auth-error" id="auth-error"></div>
+        </div>
+    </div>
+
+    <!-- شريط البروفايل العلوي -->
+    <div id="profile-hud">
+        <div class="profile-box">
+            <div class="avatar" id="hud-avatar">🦁</div>
+            <div class="profile-info">
+                <div class="profile-name" id="hud-username">—</div>
+                <div class="profile-meta">LVL <span id="hud-level">1</span> &nbsp;|&nbsp; انتصارات: <span class="profile-wins" id="hud-wins">0</span></div>
+            </div>
+        </div>
+        <div class="hud-right">
+            <div class="currency-box" onclick="navTo('store.html')">
+                <span class="currency-gem">💎</span>
+                <span class="currency-amount" id="gem-count">0</span>
+            </div>
+            <button class="settings-btn" onclick="openSettings()" title="الإعدادات">⚙️</button>
+            <button class="signout-btn" onclick="doSignOut()">خروج</button>
+        </div>
+    </div>
+
+    <!-- مودال الإعدادات -->
+    <div id="settings-modal" onclick="closeSettingsOutside(event)">
+        <div class="settings-panel">
+            <div class="settings-title">⚙ الإعدادات</div>
+
+            <div class="settings-divider">الصوت</div>
+            <div class="settings-row">
+                <label>🎵 الموسيقى</label>
+                <label class="toggle">
+                    <input type="checkbox" id="tog-music" checked onchange="saveSetting('music', this.checked)">
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+            <div class="settings-row">
+                <label>🔊 المؤثرات الصوتية</label>
+                <label class="toggle">
+                    <input type="checkbox" id="tog-sfx" checked onchange="saveSetting('sfx', this.checked)">
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+
+            <div class="settings-divider">الجرافيك</div>
+            <div class="settings-row">
+                <label>📺 تأثير شاشة CRT</label>
+                <label class="toggle">
+                    <input type="checkbox" id="tog-crt" checked onchange="toggleCRT(this.checked)">
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+            <div class="settings-row">
+                <label>✨ الجسيمات (بطاقات الخلفية)</label>
+                <label class="toggle">
+                    <input type="checkbox" id="tog-particles" checked onchange="toggleParticles(this.checked)">
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+
+            <button class="settings-close" onclick="closeSettings()">إغلاق</button>
+        </div>
+    </div>
+
+    <div id="ui-container">
+        <div class="logo-box">
+            <h1 class="main-title">MAFIA</h1>
+            <p class="sub-title">صراع العقول والبطاقات</p>
+        </div>
+
+        <div class="btn-row">
+            <button class="arcade-btn btn-create" onclick="navTo('lobby.html')">
+                <span class="btn-icon">♠️</span>
+                <span>إنشاء غرفة</span>
+            </button>
+
+            <button class="arcade-btn btn-join" onclick="navTo('join.html')">
+                <span class="btn-icon">🚪</span>
+                <span>دخول غرفة</span>
+            </button>
+
+            <button class="arcade-btn btn-deck" onclick="navTo('collection.html')">
+                <span class="btn-icon">🎴</span>
+                <span>مجموعتي</span>
+            </button>
+
+            <button class="arcade-btn btn-store" onclick="navTo('store.html')">
+                <span class="btn-icon">💎</span>
+                <span>المتجر</span>
+            </button>
+
+            <button class="arcade-btn btn-rules" onclick="navTo('rules.html')">
+                <span class="btn-icon">📜</span>
+                <span>القوانين</span>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // 1. توليد البطاقات في الخلفية
+        const bg = document.getElementById('cards-bg');
+        const IMGS = ['image_b0670f.png', 'image_b0672d.jpg', 'image_b0678a.png', 'image_b067a7.png'];
+        for (let i = 0; i < 8; i++) {
+            const card = document.createElement('div');
+            card.className = 'floating-card';
+            card.style.backgroundImage = `url('${IMGS[i % IMGS.length]}')`;
+            bg.appendChild(card);
+            gsap.set(card, {
+                x: Math.random() * window.innerWidth,
+                y: Math.random() * window.innerHeight,
+                z: -Math.random() * 800,
+                rotation: Math.random() * 360
+            });
+            gsap.to(card, {
+                y: "+=100", rotation: "+=360",
+                duration: 20 + Math.random() * 20,
+                repeat: -1, yoyo: true, ease: "sine.inOut"
+            });
+        }
+
+        // 2. أنيميشن الدخول "المضمون"
+        window.onload = () => {
+            const tl = gsap.timeline();
+            
+            // ظهور الشعار
+            tl.fromTo('.logo-box', 
+                { scale: 0.5, opacity: 0 }, 
+                { scale: 1, opacity: 1, duration: 1, ease: "back.out(1.7)" }
+            );
+
+            // ظهور الأزرار (واحد تلو الآخر بوضوح)
+            tl.fromTo('.arcade-btn', 
+                { scale: 0.8, opacity: 0, filter: "blur(10px)" }, 
+                { scale: 1, opacity: 1, filter: "blur(0px)", stagger: 0.1, duration: 0.5, ease: "power2.out" },
+                "-=0.5"
+            );
+        };
+
+        // 3. Parallax ناعم (دوران فقط لمنع هروب الأزرار)
+        document.addEventListener('mousemove', (e) => {
+            const x = (e.clientX / window.innerWidth - 0.5) * 2;
+            const y = (e.clientY / window.innerHeight - 0.5) * 2;
+            
+            gsap.to('#ui-container', { 
+                rotationY: x * 4, rotationX: -y * 4, 
+                duration: 1.5, ease: "power2.out" 
+            });
+            
+            gsap.to('#cards-bg', { x: x * 30, y: y * 30, duration: 2 });
+        });
+
+        function navTo(url) {
+            gsap.to('#ui-container', { opacity: 0, scale: 0.95, duration: 0.4, onComplete: () => { window.location.href = url; } });
+        }
+
+        // ---- Settings ----
+        function openSettings() {
+            document.getElementById('settings-modal').classList.add('open');
+        }
+        function closeSettings() {
+            document.getElementById('settings-modal').classList.remove('open');
+        }
+        function closeSettingsOutside(e) {
+            if (e.target === document.getElementById('settings-modal')) closeSettings();
+        }
+        function saveSetting(key, val) {
+            localStorage.setItem('maf_' + key, val);
+        }
+        function toggleCRT(on) {
+            document.getElementById('crt-overlay').style.display = on ? '' : 'none';
+            saveSetting('crt', on);
+        }
+        function toggleParticles(on) {
+            document.getElementById('cards-bg').style.display = on ? '' : 'none';
+            saveSetting('particles', on);
+        }
+
+        // ---- تحميل الإعدادات المحفوظة ----
+        function loadSettings() {
+            const crt = localStorage.getItem('maf_crt');
+            const particles = localStorage.getItem('maf_particles');
+            const music = localStorage.getItem('maf_music');
+            const sfx = localStorage.getItem('maf_sfx');
+            if (crt === 'false') { document.getElementById('tog-crt').checked = false; toggleCRT(false); }
+            if (particles === 'false') { document.getElementById('tog-particles').checked = false; toggleParticles(false); }
+            if (music === 'false') document.getElementById('tog-music').checked = false;
+            if (sfx === 'false') document.getElementById('tog-sfx').checked = false;
+        }
+
+        // ============================================================
+        // SUPABASE AUTH
+        // !! استبدل القيمتين ببيانات مشروعك من Supabase Dashboard !!
+        // ============================================================
+const SUPABASE_URL  = 'https://hdnmvpldhrosianqthlu.supabase.co';
+const SUPABASE_ANON = 'sb_publishable_pqG_RG3ntMuC3VdOJG45cA_ZZ_Z1JGB';
+        const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+
+        let currentUser = null;
+        let selectedAvatar = '🦁';
+
+        // ---- تبديل تبويب Login / Register ----
+        function switchTab(tab) {
+            document.getElementById('form-login').style.display    = tab === 'login'    ? '' : 'none';
+            document.getElementById('form-register').style.display = tab === 'register' ? '' : 'none';
+            document.querySelectorAll('.auth-tab').forEach((t, i) => {
+                t.classList.toggle('active', (i === 0 && tab === 'login') || (i === 1 && tab === 'register'));
+            });
+            document.getElementById('auth-error').textContent = '';
+        }
+
+        function selectAvatar(el) {
+            document.querySelectorAll('.avatar-opt').forEach(e => e.classList.remove('selected'));
+            el.classList.add('selected');
+            selectedAvatar = el.dataset.av;
+        }
+
+        // ---- تسجيل الدخول ----
+        async function doLogin() {
+            const email = document.getElementById('login-email').value.trim();
+            const pass  = document.getElementById('login-pass').value;
+            const btn   = document.getElementById('login-btn');
+            if (!email || !pass) { setAuthError('أدخل البريد وكلمة المرور'); return; }
+            btn.disabled = true; btn.textContent = '...';
+            try {
+                const { data, error } = await sb.auth.signInWithPassword({ email, password: pass });
+                if (error) throw error;
+                await loadProfile(data.user);
+            } catch(e) {
+                setAuthError(translateAuthError(e.message));
+                btn.disabled = false; btn.textContent = 'دخول ◀';
+            }
+        }
+
+        // ---- إنشاء حساب ----
+        async function doRegister() {
+            const username = document.getElementById('reg-username').value.trim();
+            const email    = document.getElementById('reg-email').value.trim();
+            const pass     = document.getElementById('reg-pass').value;
+            const btn      = document.getElementById('reg-btn');
+            if (!username || !email || !pass) { setAuthError('يرجى ملء جميع الحقول'); return; }
+            if (username.length < 3) { setAuthError('الاسم يجب أن يكون 3 أحرف على الأقل'); return; }
+            if (pass.length < 6) { setAuthError('كلمة المرور 6 أحرف على الأقل'); return; }
+            btn.disabled = true; btn.textContent = '...';
+            try {
+                const { data, error } = await sb.auth.signUp({
+                    email, password: pass,
+                    options: { data: { username, avatar: selectedAvatar } }
+                });
+                if (error) throw error;
+                if (data.user && !data.session) {
+                    setAuthError('✅ تم الإرسال! تحقق من بريدك لتأكيد الحساب.');
+                } else {
+                    await loadProfile(data.user);
+                }
+            } catch(e) {
+                setAuthError(translateAuthError(e.message));
+                btn.disabled = false; btn.textContent = 'إنشاء حساب ◀';
+            }
+        }
+
+        // ---- تسجيل الخروج ----
+        async function doSignOut() {
+            await sb.auth.signOut();
+            currentUser = null;
+            document.getElementById('auth-modal').classList.remove('hidden');
+        }
+
+        // ---- تحميل بيانات البروفايل ----
+        async function loadProfile(user) {
+            currentUser = user;
+            const { data: profile } = await sb.from('profiles').select('*').eq('id', user.id).single();
+            if (!profile) return;
+            document.getElementById('hud-avatar').textContent  = profile.avatar || '🦁';
+            document.getElementById('hud-username').textContent = profile.username;
+            document.getElementById('hud-level').textContent   = profile.level || 1;
+            document.getElementById('hud-wins').textContent    = profile.wins || 0;
+            document.getElementById('gem-count').textContent   = (profile.gems || 0).toLocaleString('ar-SA');
+            document.getElementById('auth-modal').classList.add('hidden');
+            // حفظ في localStorage للصفحات الأخرى
+            localStorage.setItem('maf_uid',    user.id);
+            localStorage.setItem('maf_gems',   profile.gems || 0);
+            localStorage.setItem('maf_username', profile.username);
+            localStorage.setItem('maf_avatar',  profile.avatar);
+        }
+
+        function setAuthError(msg) {
+            document.getElementById('auth-error').textContent = msg;
+        }
+
+        function translateAuthError(msg) {
+            if (msg.includes('Invalid login')) return '❌ البريد أو كلمة المرور غلط';
+            if (msg.includes('already registered')) return '❌ هذا البريد مسجل مسبقاً';
+            if (msg.includes('Password should')) return '❌ كلمة المرور قصيرة جداً';
+            if (msg.includes('valid email')) return '❌ صيغة البريد الإلكتروني غير صحيحة';
+            return '❌ ' + msg;
+        }
+
+        // ---- فحص الجلسة عند التحميل ----
+        async function loadGems() {
+            const { data: { session } } = await sb.auth.getSession();
+            if (session?.user) {
+                await loadProfile(session.user);
+            }
+            // بقية الإعدادات
+            loadSettings();
+        }
+
+        // Enter key shortcut
+        document.addEventListener('keydown', e => {
+            if (e.key === 'Enter') {
+                if (document.getElementById('form-register').style.display !== 'none') doRegister();
+                else doLogin();
+            }
+        });
+
+        window.addEventListener('load', () => {
+            loadGems();
+        });
+    </script>
+</body>
+</html>

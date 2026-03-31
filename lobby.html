@@ -1,0 +1,983 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>MAFIA | غرفة الانتظار الأسطورية</title>
+    
+    <!-- GSAP for Advanced Animations -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Changa:wght@400;600;800&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
+
+    <style>
+        /* =========================================
+           1. CORE VARIABLES (Balatro Arcade Vibe)
+           ========================================= */
+        :root {
+            --bg-deep: #050a15; 
+            --bg-glow: #1a233a;
+            
+            --balatro-red: #d93838;
+            --balatro-blue: #2c6aa0;
+            --balatro-gold: #e5c05c;
+            --balatro-green: #3a8a55;
+            
+            --text-main: #f8fafc;
+            --shadow-heavy: rgba(0, 0, 0, 0.85);
+
+            --card-w: 150px;
+            --card-h: 210px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; }
+
+        body {
+            background-color: var(--bg-deep);
+            background: radial-gradient(ellipse at bottom, var(--bg-glow) 0%, var(--bg-deep) 100%);
+            color: var(--text-main);
+            font-family: 'Changa', sans-serif;
+            height: 100vh;
+            overflow: hidden;
+            perspective: 1500px; /* منظور عميق جداً لـ 3D */
+        }
+
+        /* تحذير الوضع الطولي لإجبار الوضع الأفقي (Landscape) */
+        @media (orientation: portrait) {
+            body::before {
+                content: "يرجى تدوير الهاتف للوضع الأفقي 🔄 للعب";
+                position: fixed; inset: 0; background: #000; z-index: 9999;
+                display: flex; align-items: center; justify-content: center;
+                font-size: 2rem; font-weight: 800; text-align: center; color: var(--balatro-gold);
+            }
+        }
+
+        /* تأثير شاشة الأركيد (CRT) المندمج */
+        #crt-overlay {
+            position: fixed; inset: 0; z-index: 100; pointer-events: none;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%);
+            background-size: 100% 4px;
+            box-shadow: inset 0 0 150px rgba(0,0,0,0.9);
+        }
+
+        /* =========================================
+           2. BIG BACKGROUND TYPOGRAPHY (كما طلبت)
+           ========================================= */
+        #bg-stats {
+            position: fixed; top: 5%; left: 0; width: 100%;
+            display: flex; justify-content: space-around;
+            z-index: 1; pointer-events: none;
+            opacity: 0.15; /* شفاف ليكون في الخلفية */
+            transform: translateZ(-200px);
+        }
+
+        .stat-huge {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 15rem; font-weight: 900; line-height: 1;
+            text-shadow: 0 0 30px currentColor;
+        }
+
+        .stat-huge span {
+            font-family: 'Changa', sans-serif;
+            font-size: 3rem; display: block; text-align: center; margin-top: -30px;
+            text-shadow: none; letter-spacing: 5px;
+        }
+
+        .stat-mafia { color: var(--balatro-red); }
+        .stat-citizen { color: var(--balatro-blue); }
+
+        /* =========================================
+           3. THE TABLE & CARDS (حرف U)
+           ========================================= */
+        #table-container {
+            position: fixed;
+            top: 55%; left: 50%; /* نقطة التمركز */
+            width: 0; height: 0;
+            z-index: 10;
+            transform-style: preserve-3d;
+        }
+
+        .player-card {
+            position: absolute;
+            top: calc(var(--card-h) / -2);
+            left: calc(var(--card-w) / -2);
+            width: var(--card-w); height: var(--card-h);
+            transform-style: preserve-3d;
+            cursor: pointer;
+        }
+
+        .card-inner {
+            position: relative; width: 100%; height: 100%;
+            transform-style: preserve-3d;
+            border-radius: 14px;
+            box-shadow: 0 20px 50px var(--shadow-heavy), inset 0 0 0 2px rgba(255,255,255,0.15);
+            transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.4s, border-color 0.4s;
+            border: 3px solid #111;
+        }
+
+        /* تأثير الـ Hover على البطاقة */
+        .player-card:hover .card-inner {
+            transform: translateY(-30px) scale(1.1) rotateX(10deg);
+            box-shadow: 0 40px 60px rgba(0,0,0,0.9), 0 0 30px var(--balatro-gold);
+            border-color: var(--balatro-gold);
+        }
+
+        .card-face {
+            position: absolute; inset: 0; backface-visibility: hidden;
+            border-radius: 10px; background-size: cover; background-position: center;
+            overflow: hidden;
+        }
+
+        /* واجهة البطاقة مع صور الأساطير */
+        .card-front {
+            background-color: #1a1a1a;
+            display: flex; flex-direction: column; justify-content: flex-end;
+        }
+
+        /* تظليل أسود أسفل البطاقة لبروز الاسم */
+        .card-front::after {
+            content: ''; position: absolute; inset: 0;
+            background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0) 60%);
+            pointer-events: none;
+        }
+
+        .card-back {
+            background: repeating-linear-gradient(45deg, #111, #111 10px, #1a1a1a 10px, #1a1a1a 20px);
+            border: 5px solid #222;
+            transform: rotateY(180deg);
+        }
+
+        .player-name {
+            position: relative; z-index: 2;
+            color: #fff; text-align: center; padding: 15px 5px;
+            font-weight: 800; font-size: 1.2rem;
+            text-shadow: 0 2px 4px #000;
+        }
+
+        /* زر الطرد (يظهر عند الهوفر) */
+        .kick-btn {
+            position: absolute; top: 10px; right: 10px; z-index: 10;
+            background: var(--balatro-red); color: #fff;
+            width: 35px; height: 35px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.2rem; font-weight: bold; border: 2px solid #fff;
+            opacity: 0; transform: scale(0.5); transition: 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.8);
+        }
+
+        .player-card:hover .kick-btn { opacity: 1; transform: scale(1); }
+        .kick-btn:hover { background: #fff; color: var(--balatro-red); transform: scale(1.2); }
+
+        /* =========================================
+           4. HOST SETTINGS PANEL (تصميم أركيد صلب)
+           ========================================= */
+        #host-panel {
+            position: absolute; bottom: 30px; right: 30px;
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(20px);
+            border: 3px solid var(--balatro-blue);
+            border-radius: 16px; width: 320px;
+            padding: 20px; z-index: 50;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.9), inset 0 0 20px rgba(44, 106, 160, 0.2);
+            transform: translateZ(50px);
+        }
+
+        .panel-title {
+            font-family: 'Orbitron', sans-serif;
+            color: var(--balatro-gold); font-size: 1.5rem; text-align: center;
+            margin-bottom: 20px; letter-spacing: 2px;
+            text-shadow: 0 2px 5px #000;
+        }
+
+        .setting-row { margin-bottom: 15px; }
+        .setting-row label {
+            display: flex; justify-content: space-between;
+            font-size: 1rem; color: #cbd5e1; font-weight: 600; margin-bottom: 8px;
+        }
+        
+        .setting-val { color: var(--balatro-gold); font-weight: 800; }
+
+        /* تصميم Slider احترافي */
+        input[type="range"] {
+            -webkit-appearance: none; width: 100%; height: 8px;
+            background: #0f172a; border-radius: 4px; outline: none;
+            border: 1px solid #334155;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none; width: 20px; height: 20px;
+            background: var(--balatro-gold); border-radius: 50%; cursor: pointer;
+            box-shadow: 0 0 10px rgba(229, 192, 92, 0.5);
+        }
+
+        /* =========================================
+           5. START BUTTON & TOP HUD
+           ========================================= */
+        .top-hud {
+            position: absolute; top: 30px; left: 30px; right: 30px;
+            display: flex; justify-content: space-between; align-items: flex-start;
+            z-index: 50; transform: translateZ(30px);
+        }
+
+        .room-code-box {
+            background: rgba(0,0,0,0.6); padding: 10px 30px;
+            border: 2px solid var(--balatro-gold); border-radius: 12px;
+            text-align: center; box-shadow: 0 10px 20px rgba(0,0,0,0.8);
+        }
+        .room-lbl { font-size: 0.9rem; color: #94a3b8; }
+        .room-code { font-family: 'Orbitron'; font-size: 2.5rem; color: var(--balatro-gold); font-weight: 900; letter-spacing: 5px; }
+
+        .btn-exit {
+            background: #1e293b; color: #fff; font-family: 'Changa'; font-size: 1.1rem; font-weight: 800;
+            padding: 10px 25px; border: 2px solid #475569; border-radius: 8px; cursor: pointer;
+            box-shadow: 0 6px 0 #0f172a; transition: 0.1s;
+        }
+        .btn-exit:hover { transform: translateY(-2px); border-color: #fff; }
+        .btn-exit:active { transform: translateY(6px); box-shadow: 0 0 0 transparent; }
+
+        .btn-massive-start {
+            position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%);
+            background: var(--balatro-green); color: #fff;
+            font-family: 'Changa'; font-size: 2rem; font-weight: 900;
+            padding: 20px 60px; border: 3px solid #fff; border-radius: 50px;
+            cursor: pointer; text-shadow: 0 2px 5px rgba(0,0,0,0.5);
+            box-shadow: 0 10px 0 #1b4d2c, 0 20px 40px rgba(0,0,0,0.8);
+            z-index: 60; transition: 0.1s;
+            animation: pulse-glow 2s infinite;
+        }
+
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 10px 0 #1b4d2c, 0 0 20px var(--balatro-green); }
+            50% { box-shadow: 0 10px 0 #1b4d2c, 0 0 50px var(--balatro-green); }
+        }
+
+        .btn-massive-start:active {
+            transform: translate(-50%, 10px);
+            box-shadow: 0 0 0 transparent, 0 0 30px var(--balatro-green) !important;
+        }
+
+        /* تأثير القطع (Slash) للطرد */
+        .slash-effect {
+            position: absolute; top: 50%; left: 50%;
+            width: 150%; height: 10px; background: #fff;
+            box-shadow: 0 0 20px var(--balatro-red), 0 0 40px var(--balatro-red);
+            transform: translate(-50%, -50%) rotate(-45deg) scaleX(0);
+            z-index: 100; pointer-events: none; opacity: 0;
+        }
+
+        /* =========================================
+           READY BADGE على البطاقة
+           ========================================= */
+        .ready-badge {
+            position: absolute; top: 10px; left: 10px; z-index: 10;
+            width: 30px; height: 30px; border-radius: 50%;
+            background: #1e293b; border: 2px solid #334155;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1rem; transition: 0.3s cubic-bezier(0.34,1.56,0.64,1);
+            opacity: 0; transform: scale(0.5);
+        }
+        .player-card:hover .ready-badge { opacity: 1; transform: scale(1); }
+        .ready-badge.is-ready { background: var(--balatro-green); border-color: #6ee7b7; animation: readyPop 0.4s ease; }
+        @keyframes readyPop { 0%{transform:scale(1.5)} 100%{transform:scale(1)} }
+
+        /* =========================================
+           CHAT PANEL (يسار)
+           ========================================= */
+        #chat-panel {
+            position: fixed; bottom: 30px; left: 30px;
+            width: 300px; z-index: 50;
+            display: flex; flex-direction: column; gap: 0;
+        }
+        .chat-header {
+            background: rgba(15,23,42,0.9); backdrop-filter: blur(15px);
+            border: 2px solid var(--balatro-blue); border-bottom: none;
+            border-radius: 14px 14px 0 0; padding: 10px 16px;
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .chat-title {
+            font-family: 'Orbitron'; font-size: 0.85rem;
+            color: var(--balatro-gold); letter-spacing: 2px;
+        }
+        .chat-online { font-size: 0.75rem; color: #6ee7b7; }
+
+        .chat-messages {
+            background: rgba(5,10,21,0.92); backdrop-filter: blur(15px);
+            border: 2px solid var(--balatro-blue); border-bottom: none;
+            height: 200px; overflow-y: auto; padding: 10px;
+            display: flex; flex-direction: column; gap: 6px;
+            scrollbar-width: thin; scrollbar-color: var(--balatro-blue) transparent;
+        }
+        .chat-msg { font-size: 0.88rem; line-height: 1.4; }
+        .chat-msg .msg-author { font-weight: 800; margin-left: 5px; }
+        .chat-msg.me .msg-author { color: var(--balatro-gold); }
+        .chat-msg.other .msg-author { color: var(--balatro-blue); }
+        .chat-msg.system { color: #6ee7b7; font-style: italic; text-align: center; font-size: 0.8rem; }
+
+        .chat-input-row {
+            display: flex; gap: 0;
+            background: rgba(15,23,42,0.9); backdrop-filter: blur(15px);
+            border: 2px solid var(--balatro-blue); border-radius: 0 0 14px 14px;
+            overflow: hidden;
+        }
+        .chat-input {
+            flex: 1; background: transparent; border: none; outline: none;
+            color: #fff; font-family: 'Changa'; font-size: 0.9rem; font-weight: 600;
+            padding: 10px 14px; direction: rtl;
+        }
+        .chat-input::placeholder { color: #475569; }
+        .chat-send {
+            background: var(--balatro-blue); border: none; color: #fff;
+            font-size: 1.1rem; padding: 0 16px; cursor: pointer; transition: 0.2s;
+        }
+        .chat-send:hover { background: #3b82f6; }
+
+        /* =========================================
+           INVITE BUTTON (بجانب رمز الغرفة)
+           ========================================= */
+        .invite-btn {
+            background: rgba(0,0,0,0.5); color: var(--balatro-gold);
+            font-family: 'Changa'; font-size: 0.85rem; font-weight: 800;
+            padding: 6px 14px; border: 2px solid var(--balatro-gold);
+            border-radius: 8px; cursor: pointer; transition: 0.2s; margin-top: 6px;
+            letter-spacing: 1px;
+        }
+        .invite-btn:hover { background: var(--balatro-gold); color: #000; }
+        .invite-btn.copied { background: var(--balatro-green); border-color: var(--balatro-green); color: #fff; }
+
+        /* =========================================
+           ROLE TOGGLES (داخل host-panel)
+           ========================================= */
+        .roles-section { margin-top: 18px; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.1); }
+        .roles-title {
+            font-family: 'Orbitron'; font-size: 0.85rem; color: var(--balatro-gold);
+            letter-spacing: 2px; margin-bottom: 12px; text-align: center;
+        }
+        .role-toggles { display: flex; flex-direction: column; gap: 10px; }
+        .role-row {
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .role-row label { font-size: 0.9rem; color: #cbd5e1; font-weight: 700; }
+        .role-badge {
+            font-size: 0.7rem; padding: 2px 8px; border-radius: 10px; font-weight: 800;
+            margin-right: 6px;
+        }
+        .badge-special { background: rgba(107,33,168,0.4); color: #d8b4fe; border: 1px solid #7c3aed; }
+        /* Mini Toggle */
+        .mini-toggle { position: relative; width: 44px; height: 24px; }
+        .mini-toggle input { opacity: 0; width: 0; height: 0; }
+        .mini-slider {
+            position: absolute; inset: 0; border-radius: 24px;
+            background: #1e293b; cursor: pointer; transition: 0.3s;
+            border: 2px solid #334155;
+        }
+        .mini-slider::before {
+            content: ''; position: absolute; width: 14px; height: 14px;
+            left: 3px; top: 3px; border-radius: 50%; background: #64748b; transition: 0.3s;
+        }
+        .mini-toggle input:checked + .mini-slider { background: var(--balatro-green); border-color: var(--balatro-green); }
+        .mini-toggle input:checked + .mini-slider::before { transform: translateX(20px); background: #fff; }
+
+        /* =========================================
+           READY COUNT DISPLAY
+           ========================================= */
+        .ready-counter {
+            position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+            background: rgba(0,0,0,0.7); border: 2px solid rgba(255,255,255,0.15);
+            border-radius: 30px; padding: 8px 24px;
+            font-family: 'Orbitron'; font-size: 0.9rem; color: #94a3b8;
+            z-index: 55; pointer-events: none;
+        }
+        .ready-counter span { color: var(--balatro-green); font-weight: 900; }
+
+    </style>
+</head>
+<body>
+
+    <div id="crt-overlay"></div>
+
+    <!-- دردشة اللوبي -->
+    <div id="chat-panel">
+        <div class="chat-header">
+            <span class="chat-title">LOBBY CHAT</span>
+            <span class="chat-online">● <span id="online-count">8</span> متصل</span>
+        </div>
+        <div class="chat-messages" id="chat-messages"></div>
+        <div class="chat-input-row">
+            <input class="chat-input" id="chat-input" type="text" placeholder="اكتب رسالة..." maxlength="120"
+                   onkeydown="if(event.key==='Enter') sendChatMsg()">
+            <button class="chat-send" onclick="sendChatMsg()">➤</button>
+        </div>
+    </div>
+
+    <!-- عداد الجاهزية -->
+    <div class="ready-counter" id="ready-counter">جاهز: <span id="ready-count">0</span> / <span id="total-count">8</span></div>
+
+    <!-- أرقام ضخمة في الخلفية للـ Vibe -->
+    <div id="bg-stats">
+        <div class="stat-huge stat-mafia" id="bg-mafia-count">2<span>مافيا</span></div>
+        <div class="stat-huge stat-citizen" id="bg-citizen-count">6<span>صالحين</span></div>
+    </div>
+
+    <!-- حاوية الطاولة -->
+    <div id="table-container"></div>
+
+    <!-- تأثير القطع عند الطرد -->
+    <div class="slash-effect" id="global-slash"></div>
+
+    <!-- الواجهة الأمامية -->
+    <div class="top-hud">
+        <div class="room-code-box">
+            <div class="room-lbl">رمز الغرفة</div>
+            <div class="room-code">X7-A9</div>
+            <button class="invite-btn" id="invite-btn" onclick="copyInvite()">📋 نسخ رابط الدعوة</button>
+        </div>
+        <button class="btn-exit" onclick="window.location.href='index.html'">مغادرة الغرفة 🚪</button>
+    </div>
+
+    <!-- إعدادات المضيف (اليمين السفلي) -->
+    <div id="host-panel">
+        <div class="panel-title">SYS.SETTINGS</div>
+        
+        <div class="setting-row">
+            <label><span>وقت المرافعة</span> <span class="setting-val" id="val-talk">60s</span></label>
+            <input type="range" min="30" max="120" value="60" step="10" oninput="document.getElementById('val-talk').innerText = this.value + 's'">
+        </div>
+        
+        <div class="setting-row">
+            <label><span>وقت التصويت</span> <span class="setting-val" id="val-vote">20s</span></label>
+            <input type="range" min="10" max="60" value="20" step="5" oninput="document.getElementById('val-vote').innerText = this.value + 's'">
+        </div>
+
+        <div class="setting-row" style="margin-bottom: 0;">
+            <label><span>زمن الليل</span> <span class="setting-val" id="val-night">15s</span></label>
+            <input type="range" min="10" max="30" value="15" step="5" oninput="document.getElementById('val-night').innerText = this.value + 's'">
+        </div>
+
+        <!-- تخصيص الأدوار -->
+        <div class="roles-section">
+            <div class="roles-title">ROLES</div>
+            <div class="role-toggles">
+                <div class="role-row">
+                    <label><span class="role-badge badge-special">💊</span>طبيب</label>
+                    <label class="mini-toggle">
+                        <input type="checkbox" id="role-doctor" checked onchange="updateRoleCounts()">
+                        <span class="mini-slider"></span>
+                    </label>
+                </div>
+                <div class="role-row">
+                    <label><span class="role-badge badge-special">🔍</span>محقق</label>
+                    <label class="mini-toggle">
+                        <input type="checkbox" id="role-detective" checked onchange="updateRoleCounts()">
+                        <span class="mini-slider"></span>
+                    </label>
+                </div>
+                <div class="role-row">
+                    <label><span class="role-badge badge-special">🃏</span>جوكر</label>
+                    <label class="mini-toggle">
+                        <input type="checkbox" id="role-jester" onchange="updateRoleCounts()">
+                        <span class="mini-slider"></span>
+                    </label>
+                </div>
+                <div class="role-row">
+                    <label><span>عدد المافيا</span></label>
+                    <div style="display:flex;align-items:center;gap:8px;">
+                        <button onclick="changeMafiaCount(-1)" style="background:#1e293b;border:1px solid #475569;color:#fff;width:26px;height:26px;border-radius:6px;cursor:pointer;font-size:1rem;">−</button>
+                        <span id="mafia-count-val" style="font-family:'Orbitron';color:var(--balatro-red);font-weight:900;font-size:1rem;">2</span>
+                        <button onclick="changeMafiaCount(1)" style="background:#1e293b;border:1px solid #475569;color:#fff;width:26px;height:26px;border-radius:6px;cursor:pointer;font-size:1rem;">+</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- زر البدء العملاق -->
+    <button class="btn-massive-start" onclick="startGame()">بدء المعركة 🔥</button>
+
+    <script>
+        // =========================================
+        // 1. DATABASE: Players & Mythical Beasts
+        // =========================================
+        // استخدام صور عالية الجودة لوحوش أسطورية وحيوانات مفترسة تعطي هيبة للبطاقات
+        const BEASTS_IMAGES = [
+            'https://images.unsplash.com/photo-1614027164847-1b28cfe1df60?auto=format&fit=crop&w=400&q=80', // Lion
+            'https://images.unsplash.com/photo-1590425622082-9f37d38382ba?auto=format&fit=crop&w=400&q=80', // Wolf
+            'https://images.unsplash.com/photo-1611689342806-0863700ce7e4?auto=format&fit=crop&w=400&q=80', // Eagle
+            'https://images.unsplash.com/photo-1549480017-d76466a4b8e8?auto=format&fit=crop&w=400&q=80', // Tiger
+            'https://images.unsplash.com/photo-1504450758481-7338eba7524a?auto=format&fit=crop&w=400&q=80', // Snake
+            'https://images.unsplash.com/photo-1530595467537-0b5996c41f2d?auto=format&fit=crop&w=400&q=80', // Bear
+            'https://images.unsplash.com/photo-1589656966895-2f33e7653819?auto=format&fit=crop&w=400&q=80', // Panther
+            'https://images.unsplash.com/photo-1575550959106-5a7defe28b56?auto=format&fit=crop&w=400&q=80'  // Owl
+        ];
+
+        // ============================================================
+        // SUPABASE SETUP
+const SUPABASE_URL  = 'https://hdnmvpldhrosianqthlu.supabase.co';
+const SUPABASE_ANON = 'sb_publishable_pqG_RG3ntMuC3VdOJG45cA_ZZ_Z1JGB';
+        const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+
+        let currentUser   = null;
+        let currentRoom   = null;
+        let isHost        = false;
+        let realtimeSub   = null;
+        let msgSub        = null;
+
+        let playersList = [];
+        let readySet    = new Set();
+
+        const tableContainer = document.getElementById('table-container');
+
+        // =========================================
+        // 2. ENGINE: U-Shape Card Rendering
+        // =========================================
+        function renderTable(animateEntrance = false) {
+            tableContainer.innerHTML = '';
+            const total = playersList.length;
+
+            // تحديث الإحصائيات الضخمة في الخلفية
+            const mafiaCount = Math.floor(total / 3) || 1;
+            const citizenCount = total - mafiaCount;
+            document.getElementById('bg-mafia-count').innerHTML = `${mafiaCount}<span>مافيا</span>`;
+            document.getElementById('bg-citizen-count').innerHTML = `${citizenCount}<span>صالحين</span>`;
+
+            // معايير هندسة القوس (U-Shape)
+            const spreadX = 850; // الاتساع الأفقي
+            const curveY = 250;  // الانحناء للأسفل
+            const depthZ = 400;  // العمق للخلف
+
+            playersList.forEach((player, index) => {
+                const card = document.createElement('div');
+                card.className = 'player-card';
+                card.id = `card-${player.id}`;
+                
+                card.innerHTML = `
+                    <div class="card-inner">
+                        <div class="card-face card-back"></div>
+                        <div class="card-face card-front" style="background-image: url('${player.img}')">
+                            <div class="ready-badge ${readySet.has(player.id) ? 'is-ready' : ''}"
+                                 onclick="toggleReady(${player.id})" title="اضغط للتحضير">
+                                ${readySet.has(player.id) ? '✓' : '○'}
+                            </div>
+                            <button class="kick-btn" onclick="kickPlayer(${player.id}, event)">✖</button>
+                            <div class="player-name">${player.name}</div>
+                        </div>
+                    </div>
+                `;
+
+                // حسابات الـ U-Shape باستخدام الـ Normalization
+                // القيمة من -0.5 (يسار) إلى 0.5 (يمين)
+                const normalized = total > 1 ? (index / (total - 1)) - 0.5 : 0; 
+                
+                // حساب الزاوية (لجعل البطاقات تلتف حول اللاعب)
+                const angleDeg = normalized * 70; 
+                
+                // حساب الإحداثيات (X يمين/يسار، Y للأسفل لتكوين قوس، Z للخلف)
+                const tx = normalized * spreadX;
+                const ty = Math.abs(normalized) * curveY; 
+                const tz = -Math.abs(normalized) * depthZ;
+
+                // تخزين الـ Y الأساسي لاستخدامه في الطفو اللاحق
+                card.dataset.ty = ty;
+
+                tableContainer.appendChild(card);
+
+                if (animateEntrance) {
+                    // أنيميشن الدخول (يطير من الخلف ثم ينقلب)
+                    gsap.set(card, { x: 0, y: -500, z: -1000, rotationZ: 0, rotationY: 180, scale: 0.2 });
+                    
+                    const tl = gsap.timeline({ delay: index * 0.1 });
+                    tl.to(card, {
+                        x: tx, y: ty, z: tz, rotationZ: angleDeg, scale: 1,
+                        duration: 1, ease: "back.out(1.2)"
+                    })
+                    .to(card.querySelector('.card-inner'), {
+                        rotationY: 0, duration: 0.6, ease: "power2.out"
+                    }, "-=0.3");
+                } else {
+                    // تحديث الموقع بنعومة (يستخدم عند طرد لاعب)
+                    gsap.to(card, {
+                        x: tx, y: ty, z: tz, rotationZ: angleDeg,
+                        duration: 0.8, ease: "power3.out"
+                    });
+                    gsap.set(card.querySelector('.card-inner'), { rotationY: 0 });
+                }
+            });
+        }
+
+        // =========================================
+        // 3. CONTINUOUS ANIMATION: Floating Cards
+        // =========================================
+        function startFloating() {
+            gsap.ticker.add(() => {
+                const time = Date.now() * 0.0015;
+                document.querySelectorAll('.player-card').forEach((card, i) => {
+                    // تجاهل البطاقات التي يتم طردها حالياً
+                    if(card.classList.contains('is-kicking')) return;
+                    
+                    const baseTy = parseFloat(card.dataset.ty || 0);
+                    // حركة تموج بسيطة
+                    gsap.set(card, { y: baseTy + Math.sin(time + i) * 6 });
+                });
+            });
+        }
+
+        // =========================================
+        // 4. ACTION: Kick Player (Cinematic Slash)
+        // =========================================
+        function kickPlayer(id, event) {
+            event.stopPropagation();
+            const cardEl = document.getElementById(`card-${id}`);
+            if (!cardEl || cardEl.classList.contains('is-kicking')) return;
+
+            cardEl.classList.add('is-kicking');
+            
+            // إخفاء زر الطرد
+            gsap.to(cardEl.querySelector('.kick-btn'), { opacity: 0, scale: 0 });
+
+            // 1. تأثير الكاميرا (هزة خفيفة)
+            gsap.to('body', { x: 10, y: 10, duration: 0.05, yoyo: true, repeat: 5 });
+
+            // 2. ظهور خط القطع (Slash) مكان البطاقة
+            const slash = document.getElementById('global-slash');
+            const rect = cardEl.getBoundingClientRect();
+            gsap.set(slash, { 
+                top: rect.top + rect.height / 2, 
+                left: rect.left + rect.width / 2,
+                opacity: 1, scaleX: 0 
+            });
+            
+            gsap.to(slash, { 
+                scaleX: 1, duration: 0.1, ease: "power1.in",
+                onComplete: () => {
+                    gsap.to(slash, { opacity: 0, duration: 0.2 });
+                    
+                    // 3. سقوط البطاقة بشكل عنيف للأسفل مع دوران 3D
+                    gsap.to(cardEl, {
+                        y: window.innerHeight + 500,
+                        z: 500,
+                        rotationX: 720,
+                        rotationY: 360,
+                        opacity: 0,
+                        duration: 1.2,
+                        ease: "power2.in",
+                        onComplete: () => {
+                            // 4. إزالة اللاعب من المصفوفة وإعادة رسم الطاولة
+                            playersList = playersList.filter(p => p.id !== id);
+                            renderTable(false); // إعادة ترتيب بدون أنيميشن الدخول
+                        }
+                    });
+                }
+            });
+        }
+
+        // =========================================
+        // 5. ACTION: Start Game Transition
+        // =========================================
+        async function startGame() {
+            if (!isHost) { alert('فقط المضيف يمكنه بدء اللعبة'); return; }
+            if (playersList.length < 4) { alert('تحتاج إلى 4 لاعبين كحد أدنى'); return; }
+
+            const startBtn = document.querySelector('.btn-massive-start');
+            startBtn.disabled = true;
+            startBtn.textContent = '⏳ جارٍ التوزيع...';
+
+            // استدعاء Edge Function لتوزيع الأدوار
+            const { data: { session } } = await sb.auth.getSession();
+            const res = await fetch(`${SUPABASE_URL}/functions/v1/start-game`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${session.access_token}`
+                },
+                body: JSON.stringify({ room_id: currentRoom.id })
+            });
+            const result = await res.json();
+
+            if (result.error) {
+                alert('خطأ: ' + result.error);
+                startBtn.disabled = false;
+                startBtn.textContent = 'بدء المعركة 🔥';
+                return;
+            }
+
+            // تأثير الانتقال — الـ Realtime سينقل الجميع تلقائياً
+            gsap.to('#host-panel, .top-hud, .btn-massive-start', { y: 50, opacity: 0, duration: 0.4, stagger: 0.1 });
+            gsap.to('.player-card', {
+                z: 600, opacity: 0, duration: 1.5, stagger: 0.05, ease: 'power3.in',
+                onComplete: () => { location.href = `game.html?game=${result.game_id}`; }
+            });
+        }
+
+        // =========================================
+        // 6. INITIALIZATION — Supabase
+        // =========================================
+        window.onload = async () => {
+            // 1. تحقق من الجلسة
+            const { data: { session } } = await sb.auth.getSession();
+            if (!session) { location.href = 'index.html'; return; }
+            currentUser = session.user;
+
+            // 2. هل ننشئ غرفة جديدة أم ندخل غرفة موجودة؟
+            const params   = new URLSearchParams(location.search);
+            const roomCode = params.get('room');
+
+            if (roomCode) {
+                await joinExistingRoom(roomCode);
+            } else {
+                await createNewRoom();
+            }
+
+            setTimeout(startFloating, 2000);
+            subscribeToLobby();
+            subscribeToMessages();
+        };
+
+        async function createNewRoom() {
+            // إنشاء غرفة جديدة والمضيف يدخلها تلقائياً
+            const code = generateCode();
+            const { data: room, error } = await sb.from('rooms')
+                .insert({ code, host_id: currentUser.id, settings: getSettingsObj() })
+                .select().single();
+            if (error) { alert('خطأ في إنشاء الغرفة'); return; }
+            currentRoom = room;
+            isHost = true;
+
+            await sb.from('room_players').insert({
+                room_id: room.id, player_id: currentUser.id, seat: 1
+            });
+
+            history.replaceState({}, '', `?room=${code}`);
+            document.querySelector('.room-code').textContent = formatCode(code);
+            await refreshPlayers();
+        }
+
+        async function joinExistingRoom(code) {
+            const { data: room } = await sb.from('rooms')
+                .select('*').eq('code', code.toUpperCase()).single();
+            if (!room) { alert('الغرفة غير موجودة'); location.href='index.html'; return; }
+            currentRoom = room;
+            isHost = room.host_id === currentUser.id;
+
+            // انضمام إذا لم يكن موجوداً
+            const { data: existing } = await sb.from('room_players')
+                .select('id').eq('room_id', room.id).eq('player_id', currentUser.id).single();
+            if (!existing) {
+                const { data: seats } = await sb.from('room_players').select('seat').eq('room_id', room.id);
+                const taken = seats.map(s => s.seat);
+                let seat = 1; while (taken.includes(seat)) seat++;
+                await sb.from('room_players').insert({ room_id: room.id, player_id: currentUser.id, seat });
+            }
+
+            document.querySelector('.room-code').textContent = formatCode(code);
+            if (!isHost) document.getElementById('host-panel').style.display = 'none';
+            await refreshPlayers();
+        }
+
+        async function refreshPlayers() {
+            const { data } = await sb.from('room_players')
+                .select('*, profiles(id, username, avatar, level)')
+                .eq('room_id', currentRoom.id)
+                .order('seat');
+            if (!data) return;
+
+            playersList = data.map((rp, i) => ({
+                id:      rp.player_id,
+                name:    rp.profiles.username,
+                avatar:  rp.profiles.avatar || '🦁',
+                level:   rp.profiles.level || 1,
+                img:     BEASTS_IMAGES[i % BEASTS_IMAGES.length],
+                is_ready: rp.is_ready
+            }));
+
+            readySet = new Set(data.filter(rp => rp.is_ready).map(rp => rp.player_id));
+            renderTable(true);
+            updateReadyUI();
+        }
+
+        function subscribeToLobby() {
+            if (realtimeSub) realtimeSub.unsubscribe();
+            realtimeSub = sb.channel(`lobby:${currentRoom.id}`)
+                .on('postgres_changes', {
+                    event: '*', schema: 'public', table: 'room_players',
+                    filter: `room_id=eq.${currentRoom.id}`
+                }, async () => { await refreshPlayers(); })
+                .on('postgres_changes', {
+                    event: 'UPDATE', schema: 'public', table: 'rooms',
+                    filter: `id=eq.${currentRoom.id}`
+                }, async (payload) => {
+                    if (payload.new.status === 'playing') {
+                        // اللعبة بدأت — انتقل للعبة
+                        const { data: game } = await sb.from('games')
+                            .select('id').eq('room_id', currentRoom.id)
+                            .order('started_at', { ascending: false }).limit(1).single();
+                        if (game) location.href = `game.html?game=${game.id}`;
+                    }
+                })
+                .subscribe();
+        }
+
+        function subscribeToMessages() {
+            if (msgSub) msgSub.unsubscribe();
+            // نستخدم room_id كـ game_id مؤقتاً للدردشة في اللوبي
+            msgSub = sb.channel(`chat:${currentRoom.id}`)
+                .on('broadcast', { event: 'msg' }, ({ payload }) => {
+                    addChatMsg(payload.author, payload.text, payload.uid === currentUser.id, false);
+                })
+                .subscribe();
+        }
+
+        // =========================================
+        // READY SYSTEM
+        // =========================================
+        async function toggleReady(playerId) {
+            if (playerId !== currentUser.id) return; // فقط نفسك
+            const nowReady = !readySet.has(playerId);
+            await sb.from('room_players')
+                .update({ is_ready: nowReady })
+                .eq('room_id', currentRoom.id)
+                .eq('player_id', playerId);
+            // الـ Realtime سيحدّث الواجهة تلقائياً
+        }
+
+        function updateReadyUI() {
+            const total = playersList.length;
+            document.getElementById('ready-count').innerText = readySet.size;
+            document.getElementById('total-count').innerText = total;
+
+            playersList.forEach(p => {
+                const badge = document.querySelector(`#card-${p.id} .ready-badge`);
+                if (badge) {
+                    badge.classList.toggle('is-ready', readySet.has(p.id));
+                    badge.innerText = readySet.has(p.id) ? '✓' : '○';
+                }
+            });
+
+            // تفعيل زر البدء إذا كل اللاعبين جاهزون
+            const startBtn = document.querySelector('.btn-massive-start');
+            if (readySet.size === total && total >= 4) {
+                startBtn.style.animation = 'pulse-glow 0.5s infinite';
+                startBtn.innerText = '✅ الكل جاهز! ابدأ المعركة 🔥';
+            } else {
+                startBtn.style.animation = 'pulse-glow 2s infinite';
+                startBtn.innerText = 'بدء المعركة 🔥';
+            }
+        }
+
+        // =========================================
+        // INVITE LINK
+        // =========================================
+        function copyInvite() {
+            if (!currentRoom) return;
+            const link = `${location.origin}${location.pathname}?room=${currentRoom.code}`;
+            navigator.clipboard.writeText(link).catch(() => {});
+            const btn = document.getElementById('invite-btn');
+            btn.classList.add('copied');
+            btn.innerText = '✅ تم النسخ!';
+            setTimeout(() => { btn.classList.remove('copied'); btn.innerText = '📋 نسخ رابط الدعوة'; }, 2000);
+        }
+
+        // =========================================
+        // ROLE CUSTOMIZATION
+        // =========================================
+        let mafiaCount = 2;
+        const MIN_MAFIA = 1, MAX_MAFIA = 3;
+
+        function changeMafiaCount(delta) {
+            mafiaCount = Math.max(MIN_MAFIA, Math.min(MAX_MAFIA, mafiaCount + delta));
+            document.getElementById('mafia-count-val').innerText = mafiaCount;
+            updateBgStats();
+        }
+
+        function updateRoleCounts() { updateBgStats(); }
+
+        function updateBgStats() {
+            const total = playersList.length;
+            const citizens = total - mafiaCount;
+            document.getElementById('bg-mafia-count').innerHTML = `${mafiaCount}<span>مافيا</span>`;
+            document.getElementById('bg-citizen-count').innerHTML = `${citizens}<span>صالحين</span>`;
+        }
+
+        // =========================================
+        // CHAT SYSTEM
+        // =========================================
+        const CHAT_BOTS = ["الغافري","عز الدين","أبو الرب","بلال فضيلي"];
+        const BOT_MSGS = [
+            "جاهز للعب 💪","من المضيف؟","كم مدة المرافعة؟",
+            "أنا مع وجود المحقق","هل سيكون فيه جوكر هذه المرة؟",
+            "لا تنسوا التصويت بسرعة 😂","سأكشف المافيا الليلة",
+            "ثقوا بي أنا صالح 100%","أتمنى ما أكون مافيا مرة ثانية 😅"
+        ];
+
+        function addChatMsg(author, text, isMe = false, isSystem = false) {
+            const box = document.getElementById('chat-messages');
+            const div = document.createElement('div');
+            div.className = `chat-msg ${isSystem ? 'system' : isMe ? 'me' : 'other'}`;
+            if (isSystem) {
+                div.innerText = text;
+            } else {
+                div.innerHTML = `<span class="msg-author">${author}:</span>${text}`;
+            }
+            box.appendChild(div);
+            box.scrollTop = box.scrollHeight;
+            // حذف الرسائل القديمة (max 50)
+            if (box.children.length > 50) box.firstChild.remove();
+        }
+
+        async function sendChatMsg() {
+            const input = document.getElementById('chat-input');
+            const text  = input.value.trim();
+            if (!text || !currentUser || !currentRoom) return;
+            input.value = '';
+            const { data: profile } = await sb.from('profiles').select('username').eq('id', currentUser.id).single();
+            // Broadcast عبر Supabase Realtime
+            await sb.channel(`chat:${currentRoom.id}`).send({
+                type: 'broadcast', event: 'msg',
+                payload: { author: profile?.username || 'أنت', text, uid: currentUser.id }
+            });
+            addChatMsg(profile?.username || 'أنت', text, true);
+        }
+
+        // =========================================
+        // HELPERS
+        // =========================================
+        function generateCode() {
+            const c = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+            return Array.from({length:5}, () => c[Math.floor(Math.random()*c.length)]).join('');
+        }
+
+        function formatCode(code) {
+            return code.slice(0,2) + '-' + code.slice(2);
+        }
+
+        function getSettingsObj() {
+            return {
+                mafia_count: mafiaCount,
+                has_doctor:   document.getElementById('role-doctor')?.checked    ?? true,
+                has_sheriff:  document.getElementById('role-detective')?.checked ?? true,
+                has_bodyguard: false, has_mayor: false, has_medium: false,
+                has_jester: false, has_sk: false, has_executioner: false,
+                has_witch: false, has_framer: false, has_consigliere: false,
+                day_duration:   parseInt(document.getElementById('val-talk')?.textContent)  || 60,
+                night_duration: parseInt(document.getElementById('val-night')?.textContent) || 15,
+                vote_duration:  parseInt(document.getElementById('val-vote')?.textContent)  || 20
+            };
+        }
+
+        // مغادرة الغرفة عند الضغط على الزر
+        document.querySelector('.btn-exit').addEventListener('click', async () => {
+            if (currentRoom && currentUser) {
+                await sb.from('room_players').delete()
+                    .eq('room_id', currentRoom.id).eq('player_id', currentUser.id);
+            }
+            location.href = 'index.html';
+        });
+
+        // تفاعل الـ Parallax مع الماوس لزيادة العمق
+        document.addEventListener('mousemove', (e) => {
+            const x = (e.clientX / window.innerWidth - 0.5) * 2;
+            const y = (e.clientY / window.innerHeight - 0.5) * 2;
+            gsap.to(tableContainer, { rotationY: x * 4, rotationX: -y * 4, duration: 1.5, ease: "power2.out" });
+            gsap.to('#bg-stats', { x: -x * 30, y: -y * 30, duration: 2, ease: "power1.out" });
+        });
+
+    </script>
+</body>
+</html>
