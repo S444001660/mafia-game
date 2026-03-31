@@ -673,7 +673,7 @@ const SUPABASE_ANON = 'sb_publishable_pqG_RG3ntMuC3VdOJG45cA_ZZ_Z1JGB';
         // =========================================
         async function startGame() {
             if (!isHost) { alert('فقط المضيف يمكنه بدء اللعبة'); return; }
-            if (playersList.length < 4) { alert('تحتاج إلى 4 لاعبين كحد أدنى'); return; }
+            if (playersList.length < 2) { alert('تحتاج إلى 4 لاعبين كحد أدنى'); return; }
 
             const startBtn = document.querySelector('.btn-massive-start');
             startBtn.disabled = true;
