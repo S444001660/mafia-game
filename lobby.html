@@ -388,6 +388,189 @@
         }
         .ready-counter span { color: var(--balatro-green); font-weight: 900; }
 
+        /* =========================================
+           MOBILE RESPONSIVE (Tablet & Phone)
+           ========================================= */
+        @media (max-width: 1200px) {
+            :root {
+                --card-w: 120px;
+                --card-h: 168px;
+            }
+            #host-panel { width: 280px; padding: 16px; }
+            .panel-title { font-size: 1.2rem; }
+            #chat-panel { width: 260px; }
+            .chat-messages { height: 160px; }
+            #bg-stats { opacity: 0.08; }
+            .stat-huge { font-size: 10rem; }
+            .stat-huge span { font-size: 2rem; }
+        }
+
+        @media (max-width: 900px) {
+            :root {
+                --card-w: 100px;
+                --card-h: 140px;
+            }
+            .top-hud { top: 15px; left: 15px; right: 15px; gap: 15px; }
+            .room-code { font-size: 1.8rem; letter-spacing: 3px; }
+            .room-code-box { padding: 8px 20px; }
+            .btn-exit { font-size: 0.9rem; padding: 8px 16px; }
+            #host-panel { width: 240px; padding: 14px; bottom: 20px; right: 20px; }
+            .panel-title { font-size: 1rem; margin-bottom: 14px; }
+            .setting-row { margin-bottom: 10px; font-size: 0.85rem; }
+            .setting-row label { font-size: 0.85rem; }
+            #chat-panel { width: 240px; bottom: 20px; left: 20px; }
+            .chat-header { padding: 8px 12px; }
+            .chat-title { font-size: 0.7rem; }
+            .chat-online { font-size: 0.65rem; }
+            .chat-messages { height: 140px; font-size: 0.8rem; }
+            .chat-input { font-size: 0.8rem; }
+            #bg-stats { opacity: 0.06; }
+            .stat-huge { font-size: 8rem; }
+            .stat-huge span { font-size: 1.5rem; margin-top: -20px; }
+            .btn-massive-start { font-size: 1.4rem; padding: 14px 40px; }
+            .ready-counter { font-size: 0.8rem; padding: 6px 16px; }
+        }
+
+        @media (max-width: 600px) {
+            :root {
+                --card-w: 80px;
+                --card-h: 112px;
+            }
+            body { overflow-y: auto; }
+            #crt-overlay { display: none; }
+            #bg-stats { display: none; }
+            
+            .top-hud { 
+                position: relative; 
+                top: auto; left: auto; right: auto;
+                flex-direction: column; 
+                align-items: stretch;
+                gap: 10px;
+                z-index: 5000;
+                margin: 12px;
+            }
+            .room-code-box { 
+                border: 2px solid var(--balatro-gold); 
+                padding: 10px 12px;
+                order: -1;
+                text-align: center;
+            }
+            .room-lbl { font-size: 0.75rem; }
+            .room-code { font-size: 1.4rem; letter-spacing: 2px; }
+            .invite-btn { font-size: 0.7rem; padding: 4px 10px; width: 100%; }
+            .btn-exit { 
+                width: 100%;
+                font-size: 0.85rem; 
+                padding: 8px 16px;
+            }
+
+            #table-container {
+                top: 50%;
+                left: 50%;
+            }
+
+            #host-panel { 
+                position: fixed;
+                bottom: auto;
+                right: auto;
+                left: 50%;
+                top: 50%;
+                transform: translate(-50%, -50%);
+                width: 90%;
+                max-width: 320px;
+                max-height: 70vh;
+                overflow-y: auto;
+                padding: 16px;
+                z-index: 5001;
+            }
+            .panel-title { font-size: 1rem; margin-bottom: 12px; }
+            .setting-row { margin-bottom: 10px; }
+            .setting-row label { font-size: 0.8rem; }
+            .setting-val { font-size: 0.9rem; }
+
+            #chat-panel { 
+                position: fixed;
+                bottom: auto;
+                left: auto;
+                right: 12px;
+                top: 12px;
+                width: calc(100% - 24px);
+                max-width: 320px;
+                z-index: 4999;
+            }
+            .chat-header { padding: 8px 10px; }
+            .chat-title { font-size: 0.65rem; }
+            .chat-online { font-size: 0.6rem; }
+            .chat-messages { height: 120px; font-size: 0.75rem; }
+            .chat-input { font-size: 0.75rem; padding: 8px 10px; }
+            .chat-send { padding: 0 12px; font-size: 1rem; }
+
+            .btn-massive-start { 
+                position: fixed;
+                bottom: 12px;
+                left: 50%;
+                transform: translateX(-50%);
+                font-size: 1.1rem;
+                padding: 12px 32px;
+                border-radius: 40px;
+                z-index: 5002;
+            }
+
+            .ready-counter { 
+                position: fixed;
+                bottom: 70px;
+                left: 50%;
+                transform: translateX(-50%);
+                font-size: 0.7rem;
+                padding: 5px 14px;
+            }
+
+            .player-card {
+                top: calc(var(--card-h) / -2);
+                left: calc(var(--card-w) / -2);
+            }
+
+            .card-inner { border-radius: 10px; }
+            .player-name { font-size: 0.75rem; padding: 8px 3px; }
+            .kick-btn { 
+                width: 28px; height: 28px;
+                font-size: 1rem;
+            }
+            .ready-badge { 
+                width: 24px; height: 24px;
+                font-size: 0.8rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            :root {
+                --card-w: 70px;
+                --card-h: 98px;
+            }
+            .room-code { font-size: 1.2rem; letter-spacing: 1px; }
+            .room-lbl { font-size: 0.65rem; }
+            .invite-btn { font-size: 0.65rem; }
+            .btn-exit { font-size: 0.8rem; }
+            .panel-title { font-size: 0.9rem; }
+            .setting-row label { font-size: 0.75rem; }
+            .btn-massive-start { font-size: 1rem; padding: 10px 24px; }
+            .ready-counter { font-size: 0.65rem; padding: 4px 10px; }
+            #host-panel { width: 85%; }
+            #chat-panel { width: calc(100% - 24px); }
+        }
+
+        /* Portrait Mode - Hide landscape warning and allow mobile play */
+        @media (max-width: 768px) and (orientation: portrait) {
+            body::before {
+                display: none !important;
+            }
+            body {
+                height: 100vh;
+                overflow: auto;
+                padding: 12px;
+            }
+        }
+
     </style>
 </head>
 <body>

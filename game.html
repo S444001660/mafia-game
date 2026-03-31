@@ -447,6 +447,137 @@
         .witch-second-target h3 { font-family: 'Orbitron'; font-size: 1.1rem; color: #1abc9c; margin-bottom: 10px; }
         .witch-second-target p { color: #94a3b8; font-size: 0.9rem; }
 
+        /* =========================================
+           MOBILE RESPONSIVE (Tablet & Phone)
+           ========================================= */
+        @media (max-width: 1200px) {
+            :root {
+                --card-w: 120px;
+                --card-h: 168px;
+            }
+            .phase-deco { font-size: 8rem; }
+            #status-panel { width: 240px; }
+        }
+
+        @media (max-width: 900px) {
+            :root {
+                --card-w: 100px;
+                --card-h: 140px;
+            }
+            #status-panel { width: 220px; right: 15px; top: 15px; }
+            .status-time { font-size: 1.2rem; }
+            .phase-label { font-size: 0.85rem; }
+            #ui-action-area { bottom: 20px; gap: 10px; }
+            .action-item { flex: 1; }
+            .action-btn { font-size: 0.9rem; padding: 10px; }
+            .my-status { width: 200px; }
+            .role-badge { padding: 8px 16px; font-size: 0.9rem; }
+            #vote-hud { width: 200px; right: 15px; bottom: 20px; }
+        }
+
+        @media (max-width: 600px) {
+            :root {
+                --card-w: 80px;
+                --card-h: 112px;
+            }
+            body { overflow-y: auto; }
+            #crt-overlay { display: none; }
+            
+            #status-panel { 
+                position: fixed;
+                width: 90%;
+                max-width: 280px;
+                right: 10px;
+                top: 10px;
+                z-index: 5000;
+            }
+            .status-time { font-size: 1rem; }
+            .phase-label { font-size: 0.75rem; }
+            
+            #ui-action-area { 
+                position: fixed;
+                bottom: 60px;
+                left: 10px;
+                right: 10px;
+                display: flex;
+                gap: 8px;
+                z-index: 4999;
+                width: auto;
+            }
+            .action-btn { 
+                font-size: 0.8rem;
+                padding: 8px 12px;
+                flex: 1;
+            }
+
+            #my-status {
+                position: fixed;
+                bottom: 10px;
+                left: 10px;
+                width: calc(100% - 20px);
+                max-width: 280px;
+            }
+            .my-status { width: 100%; }
+            .role-badge { padding: 6px 12px; font-size: 0.85rem; }
+
+            #vote-hud { 
+                position: fixed;
+                right: 10px;
+                bottom: 10px;
+                width: auto;
+                max-width: 250px;
+                z-index: 4998;
+            }
+            .vote-box { padding: 15px; }
+            .vote-time { font-size: 0.9rem; }
+            .vote-target { font-size: 0.8rem; }
+            .my-vote { font-size: 0.75rem; }
+
+            #table-container { 
+                top: 45%;
+                left: 50%;
+            }
+
+            .enemy-card {
+                top: calc(var(--card-h) / -2);
+                left: calc(var(--card-w) / -2);
+            }
+
+            .card-inner { border-radius: 10px; }
+            .player-name { font-size: 0.7rem; }
+
+            .phase-deco { 
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                font-size: 6rem;
+                z-index: 5;
+            }
+
+            .target-reticle { font-size: 3rem; }
+        }
+
+        @media (max-width: 480px) {
+            :root {
+                --card-w: 70px;
+                --card-h: 98px;
+            }
+            #status-panel { width: 85%; }
+            .status-time { font-size: 0.9rem; }
+            .phase-label { font-size: 0.7rem; }
+            .action-btn { font-size: 0.75rem; padding: 6px 10px; }
+            .role-badge { padding: 5px 10px; font-size: 0.8rem; }
+            #vote-hud { max-width: 200px; }
+            .phase-deco { font-size: 5rem; }
+        }
+
+        /* Portrait Mode - Hide landscape warning and allow mobile play */
+        @media (max-width: 768px) and (orientation: portrait) {
+            body::before { display: none !important; }
+            body { height: 100vh; overflow: auto; padding: 12px; }
+        }
+
     </style>
 </head>
 <body>
